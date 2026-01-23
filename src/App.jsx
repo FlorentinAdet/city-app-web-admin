@@ -10,6 +10,7 @@ import UsersPage from './pages/UsersPage'
 import LoginPage from './pages/LoginPage'
 import AdminPanelPage from './pages/AdminPanelPage'
 import { useAuth } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home')
@@ -33,15 +34,21 @@ function App() {
 
   // Show login if not authenticated
   if (!token || !admin) {
-    return <LoginPage />
+    return (
+      <ToastProvider>
+        <LoginPage />
+      </ToastProvider>
+    )
   }
 
   // Show admin panel if user is superadmin
   if (admin.role === 'superadmin') {
     return (
-      <MainLayout title="Panel Superadmin" activePage="admin-panel" onPageChange={handlePageChange}>
-        <AdminPanelPage />
-      </MainLayout>
+      <ToastProvider>
+        <MainLayout title="Panel Superadmin" activePage="admin-panel" onPageChange={handlePageChange}>
+          <AdminPanelPage />
+        </MainLayout>
+      </ToastProvider>
     )
   }
 
@@ -64,9 +71,11 @@ function App() {
   }
 
   return (
-    <MainLayout title="Tableau de bord" activePage={currentPage} onPageChange={handlePageChange}>
-      {renderPage()}
-    </MainLayout>
+    <ToastProvider>
+      <MainLayout title="Tableau de bord" activePage={currentPage} onPageChange={handlePageChange}>
+        {renderPage()}
+      </MainLayout>
+    </ToastProvider>
   )
 }
 

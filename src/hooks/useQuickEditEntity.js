@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useToast } from '../context/ToastContext'
 
 export default function useQuickEditEntity({
   fetchAll,
@@ -10,6 +11,7 @@ export default function useQuickEditEntity({
   validate,
   messages
 }) {
+  const toast = useToast()
   const mergedMessages = useMemo(
     () => ({
       loadError: 'Erreur lors du chargement',
@@ -38,11 +40,11 @@ export default function useQuickEditEntity({
       setItems(response?.data || [])
     } catch (error) {
       console.error(mergedMessages.loadError, error)
-      alert(mergedMessages.loadError)
+      toast.error(mergedMessages.loadError)
     } finally {
       setLoading(false)
     }
-  }, [fetchAll, mergedMessages.loadError])
+  }, [fetchAll, mergedMessages.loadError, toast])
 
   useEffect(() => {
     refresh()
@@ -93,10 +95,10 @@ export default function useQuickEditEntity({
 
       await refresh()
       closeDrawer()
-      alert(editingItem ? mergedMessages.updateSuccess : mergedMessages.createSuccess)
+      toast.success(editingItem ? mergedMessages.updateSuccess : mergedMessages.createSuccess)
     } catch (error) {
       console.error(mergedMessages.saveError, error)
-      alert(mergedMessages.saveError)
+      toast.error(mergedMessages.saveError)
     }
   }
 
@@ -110,10 +112,10 @@ export default function useQuickEditEntity({
       if (editingItem?.id === item.id) {
         closeDrawer()
       }
-      alert(mergedMessages.deleteSuccess)
+      toast.success(mergedMessages.deleteSuccess)
     } catch (error) {
       console.error(mergedMessages.deleteError, error)
-      alert(mergedMessages.deleteError)
+      toast.error(mergedMessages.deleteError)
     }
   }
 

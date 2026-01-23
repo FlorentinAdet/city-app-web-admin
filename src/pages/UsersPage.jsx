@@ -4,10 +4,12 @@ import Modal from '../components/common/Modal'
 import Input from '../components/common/Input'
 import Button from '../components/common/Button'
 import { usersAPI } from '../services/api'
+import { useToast } from '../context/ToastContext'
 import './PageStyles.css'
 import { Plus, Users as UsersIcon } from 'lucide-react'
 
 export default function UsersPage() {
+  const toast = useToast()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -32,7 +34,7 @@ export default function UsersPage() {
       setUsers(response.data)
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error)
-      alert('Erreur lors du chargement des utilisateurs')
+      toast.error('Erreur lors du chargement des utilisateurs')
     } finally {
       setLoading(false)
     }
@@ -70,10 +72,10 @@ export default function UsersPage() {
       
       fetchUsers()
       closeModal()
-      alert(editingItem ? 'Utilisateur modifié avec succès' : 'Utilisateur créé avec succès')
+      toast.success(editingItem ? 'Utilisateur modifié avec succès' : 'Utilisateur créé avec succès')
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
-      alert('Erreur lors de la sauvegarde')
+      toast.error('Erreur lors de la sauvegarde')
     }
   }
 
@@ -95,10 +97,10 @@ export default function UsersPage() {
     try {
       await usersAPI.delete(item.id)
       fetchUsers()
-      alert('Utilisateur supprimé avec succès')
+      toast.success('Utilisateur supprimé avec succès')
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
-      alert('Erreur lors de la suppression')
+      toast.error('Erreur lors de la suppression')
     }
   }
 

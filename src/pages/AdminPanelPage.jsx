@@ -4,10 +4,12 @@ import Button from '../components/common/Button'
 import Modal from '../components/common/Modal'
 import DataTable from '../components/common/DataTable'
 import { adminAPI } from '../services/api'
+import { useToast } from '../context/ToastContext'
 import './PageStyles.css'
 import { MapPin, Plus, Shield, User } from 'lucide-react'
 
 export default function AdminPanelPage() {
+  const toast = useToast()
   const [activeTab, setActiveTab] = useState('cities')
   const [cities, setCities] = useState([])
   const [admins, setAdmins] = useState([])
@@ -83,9 +85,9 @@ export default function AdminPanelPage() {
       setCityForm({ name: '', slug: '' })
       setIsModalOpen(false)
       setError('')
-      alert('Ville créée avec succès')
+      toast.success('Ville créée avec succès')
     } catch (err) {
-      alert(err.response?.data?.error || 'Erreur lors de la création')
+      toast.error(err.response?.data?.error || 'Erreur lors de la création')
       console.error(err)
     }
   }
@@ -100,9 +102,9 @@ export default function AdminPanelPage() {
       setAdminForm({ email: '', password: '', city_id: '', role: 'admin' })
       setIsModalOpen(false)
       setError('')
-      alert('Admin créé avec succès')
+      toast.success('Admin créé avec succès')
     } catch (err) {
-      alert(err.response?.data?.error || 'Erreur lors de la création')
+      toast.error(err.response?.data?.error || 'Erreur lors de la création')
       console.error(err)
     }
   }
@@ -112,9 +114,9 @@ export default function AdminPanelPage() {
     try {
       await adminAPI.deleteAdmin(admin.id)
       fetchAdmins()
-      alert('Admin désactivé avec succès')
+      toast.success('Admin désactivé avec succès')
     } catch (err) {
-      alert(err.response?.data?.error || 'Erreur lors de la suppression')
+      toast.error(err.response?.data?.error || 'Erreur lors de la suppression')
       console.error(err)
     }
   }

@@ -3,11 +3,13 @@ import Input from '../components/common/Input'
 import Button from '../components/common/Button'
 import { authAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import './LoginPage.css'
 import { Lock } from 'lucide-react'
 
 export default function LoginPage({ onSuccess }) {
   const { login } = useAuth()
+  const toast = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,9 +23,12 @@ export default function LoginPage({ onSuccess }) {
       const res = await authAPI.login(email, password)
       const { access_token, admin, city } = res.data
       login(access_token, admin, city)
+      toast.success('Connexion réussie')
       if (onSuccess) onSuccess(city)
     } catch (err) {
-      setError(err.response?.data?.error || 'Connexion échouée')
+      const errorMsg = err.response?.data?.error || 'Connexion échouée'
+      setError(errorMsg)
+      toast.error(errorMsg)
     } finally {
       setLoading(false)
     }

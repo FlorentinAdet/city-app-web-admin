@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import Button from './Button'
+import { useToast } from '../../context/ToastContext'
 import './ImageUploadField.css'
 import { Upload, X } from 'lucide-react'
 
@@ -11,6 +12,7 @@ export default function ImageUploadField({
   uploadFn,
   disabled
 }) {
+  const toast = useToast()
   const inputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
 
@@ -27,6 +29,7 @@ export default function ImageUploadField({
       setUploading(true)
       const result = await uploadFn(file)
       onChangeUrl?.(result?.url || '')
+      toast.success('Image uploadée avec succès')
     } catch (err) {
       const status = err?.response?.status
       const serverError = err?.response?.data?.error
@@ -37,7 +40,7 @@ export default function ImageUploadField({
         message,
         error: err
       })
-      alert(status ? `Upload échoué (${status}) : ${message}` : `Upload échoué : ${message}`)
+      toast.error(status ? `Upload échoué (${status}) : ${message}` : `Upload échoué : ${message}`)
     } finally {
       setUploading(false)
       // allow picking same file again
