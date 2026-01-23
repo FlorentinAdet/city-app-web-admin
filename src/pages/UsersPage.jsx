@@ -5,6 +5,7 @@ import Input from '../components/common/Input'
 import Button from '../components/common/Button'
 import { usersAPI } from '../services/api'
 import './PageStyles.css'
+import { Plus, Users as UsersIcon } from 'lucide-react'
 
 export default function UsersPage() {
   const [users, setUsers] = useState([])
@@ -128,7 +129,6 @@ export default function UsersPage() {
   }
 
   const columns = [
-    { key: 'id', label: 'ID' },
     { key: 'username', label: "Nom d'utilisateur" },
     { key: 'email', label: 'Email' },
     { 
@@ -148,10 +148,13 @@ export default function UsersPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1>👥 Gestion des Utilisateurs</h1>
+          <h1>
+            <UsersIcon size={22} aria-hidden="true" />
+            Gestion des Utilisateurs
+          </h1>
           <p>Gérez tous les utilisateurs de votre application</p>
         </div>
-        <Button onClick={openCreateModal} icon="➕">
+        <Button onClick={openCreateModal} icon={<Plus size={16} />}>
           Nouvel Utilisateur
         </Button>
       </div>

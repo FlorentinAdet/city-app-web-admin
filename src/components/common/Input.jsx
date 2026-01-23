@@ -1,38 +1,48 @@
-import './Input.css'
+import React from 'react';
+import './Input.css';
 
-export default function Input({ 
-  label, 
-  name, 
-  type = 'text', 
-  value, 
-  onChange, 
-  placeholder,
-  required = false,
+const Input = React.forwardRef(({
+  label,
   error,
+  type = 'text',
+  placeholder,
+  value,
+  onChange,
+  disabled,
+  required,
+  className,
+  name,
   multiline = false,
-  rows = 4
-}) {
-  const InputElement = multiline ? 'textarea' : 'input'
+  rows = 4,
+  ...props
+}, ref) => {
+  const InputElement = multiline ? 'textarea' : 'input';
   
   return (
-    <div className="input-group">
+    <div className="form-group">
       {label && (
-        <label htmlFor={name} className="input-label">
-          {label} {required && <span className="required">*</span>}
+        <label className="form-label">
+          {label}
+          {required && <span className="required">*</span>}
         </label>
       )}
       <InputElement
-        id={name}
+        ref={ref}
         name={name}
         type={type}
+        placeholder={placeholder}
         value={value}
         onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        className={`input ${error ? 'input-error' : ''}`}
+        disabled={disabled}
+        className={`form-input ${error ? 'error' : ''} ${className || ''}`}
         rows={multiline ? rows : undefined}
+        {...props}
       />
-      {error && <span className="error-message">{error}</span>}
+      {error && <span className="form-error">{error}</span>}
     </div>
-  )
-}
+  );
+});
+
+Input.displayName = 'Input';
+
+export default Input;

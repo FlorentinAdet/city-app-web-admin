@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import './styles/DesignSystem.css'
 import './App.css'
-import Header from './components/layout/Header'
-import Navigation from './components/layout/Navigation'
+import MainLayout from './components/layout/MainLayout'
+import HomePage from './pages/HomePage'
 import NewsPage from './pages/NewsPage'
 import EventsPage from './pages/EventsPage'
 import ReportsPage from './pages/ReportsPage'
@@ -11,11 +12,44 @@ import AdminPanelPage from './pages/AdminPanelPage'
 import { useAuth } from './context/AuthContext'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('news')
+  const [currentPage, setCurrentPage] = useState('home')
   const { token, admin } = useAuth()
 
+  const handlePageChange = useCallback((pageId) => {
+    setCurrentPage(pageId)
+  }, [])
+
+  useEffect(() => {
+    // Backwards-compat for any legacy callers; Sidebar now uses props.
+    if (typeof window === 'undefined') return
+
+    window.onPageChange = handlePageChange
+    return () => {
+      if (window.onPageChange === handlePageChange) {
+        delete window.onPageChange
+      }
+    }
+  }, [handlePageChange])
+
+  // Show login if not authenticated
+  if (!token || !admin) {
+    return <LoginPage />
+  }
+
+  // Show admin panel if user is superadmin
+  if (admin.role === 'superadmin') {
+    return (
+      <MainLayout title="Panel Superadmin" activePage="admin-panel" onPageChange={handlePageChange}>
+        <AdminPanelPage />
+      </MainLayout>
+    )
+  }
+
+  // Regular admin dashboard
   const renderPage = () => {
-    switch (activeTab) {
+    switch (currentPage) {
+      case 'home':
+        return <HomePage onNavigate={handlePageChange} />
       case 'news':
         return <NewsPage />
       case 'events':
@@ -25,35 +59,14 @@ function App() {
       case 'users':
         return <UsersPage />
       default:
-        return <NewsPage />
+        return <HomePage onNavigate={handlePageChange} />
     }
   }
 
-  // Show login if not authenticated
-  if (!token || !admin) {
-    return (
-      <div className="app">
-        <Header />
-        <main className="main">
-          <LoginPage />
-        </main>
-      </div>
-    )
-  }
-
-  // Show admin panel if user is superadmin
-  if (admin.role === 'superadmin') {
-    return <AdminPanelPage />
-  }
-
   return (
-    <div className="app">
-      <Header />
-      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="main">
-        {renderPage()}
-      </main>
-    </div>
+    <MainLayout title="Tableau de bord" activePage={currentPage} onPageChange={handlePageChange}>
+      {renderPage()}
+    </MainLayout>
   )
 }
 

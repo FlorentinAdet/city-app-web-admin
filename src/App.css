@@ -1,12 +1,37 @@
-.app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #f5f7fa;
+/* ============================================
+   APP ROOT STYLES - Minimal Design
+   ============================================ */
+
+#root {
+  width: 100%;
+  height: 100%;
 }
 
-.main {
-  flex: 1;
-  background: #f5f7fa;
-  min-height: calc(100vh - 200px);
+.app {
+  width: 100%;
+  height: 100%;
+}
+
+/* ============================================
+   PAGE CONTAINER - No Decorative Animations
+   ============================================ */
+
+.page {
+  /* Functional design - no decorative animations */
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+@media (max-width: 1024px) {
+  /* Adjust spacing for smaller screens */
+}
+
+@media (max-width: 768px) {
+  /* Mobile adjustments */
+}
+
+@media (max-width: 480px) {
+  /* Extra small devices */
 }

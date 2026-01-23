@@ -4,6 +4,7 @@ import Button from '../components/common/Button'
 import { authAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import './PageStyles.css'
+import { Lock } from 'lucide-react'
 
 export default function LoginPage({ onSuccess }) {
   const { login } = useAuth()
@@ -32,7 +33,10 @@ export default function LoginPage({ onSuccess }) {
     <div className="page" style={{ maxWidth: 480 }}>
       <div className="page-header">
         <div>
-          <h1>🔐 Connexion Administrateur</h1>
+          <h1>
+            <Lock size={22} aria-hidden="true" />
+            Connexion Administrateur
+          </h1>
           <p>Accédez au panneau de votre ville</p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import Button from './Button'
 import './DataTable.css'
+import { Inbox, Pencil, Trash2 } from 'lucide-react'
 
 export default function DataTable({ columns, data, onEdit, onDelete, loading }) {
   if (loading) {
@@ -14,7 +15,10 @@ export default function DataTable({ columns, data, onEdit, onDelete, loading }) 
   if (!data || data.length === 0) {
     return (
       <div className="table-empty">
-        <p>📭 Aucune donnée disponible</p>
+        <p className="table-empty-text">
+          <Inbox size={18} aria-hidden="true" />
+          Aucune donnée disponible
+        </p>
       </div>
     )
   }
@@ -42,14 +46,14 @@ export default function DataTable({ columns, data, onEdit, onDelete, loading }) 
                 <Button 
                   variant="warning" 
                   onClick={() => onEdit(row)}
-                  icon="✏️"
+                  icon={<Pencil size={16} />}
                 >
                   Modifier
                 </Button>
                 <Button 
                   variant="danger" 
                   onClick={() => onDelete(row)}
-                  icon="🗑️"
+                  icon={<Trash2 size={16} />}
                 >
                   Supprimer
                 </Button>

@@ -1,135 +1,96 @@
-import { useState, useEffect } from 'react'
-import DataTable from '../components/common/DataTable'
-import Modal from '../components/common/Modal'
+import { useMemo, useState } from 'react'
+import Drawer from '../components/common/Drawer'
+import EntityCardGrid from '../components/common/EntityCardGrid'
+import EntityListToolbar from '../components/common/EntityListToolbar'
 import Input from '../components/common/Input'
 import Button from '../components/common/Button'
 import { reportsAPI } from '../services/api'
+import useQuickEditEntity from '../hooks/useQuickEditEntity'
+import { filterAndSort } from '../utils/listFiltering'
 import './PageStyles.css'
+import { AlertTriangle, MapPin, Plus, Save, Trash2 } from 'lucide-react'
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState(null)
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    location: '',
-    status: 'pending',
-    categoryId: '',
-    userId: ''
-  })
-  const [errors, setErrors] = useState({})
+  const [query, setQuery] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [sort, setSort] = useState('date_desc')
+  const [statusFilter, setStatusFilter] = useState('')
 
-  useEffect(() => {
-    fetchReports()
-  }, [])
+  const initialFormData = useMemo(
+    () => ({
+      title: '',
+      description: '',
+      location: '',
+      status: 'pending',
+      categoryId: '',
+      userId: ''
+    }),
+    []
+  )
 
-  const fetchReports = async () => {
-    setLoading(true)
-    try {
-      const response = await reportsAPI.getAll()
-      setReports(response.data)
-    } catch (error) {
-      console.error('Erreur lors du chargement des signalements:', error)
-      alert('Erreur lors du chargement des signalements')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const validateForm = () => {
+  const validateForm = (data) => {
     const newErrors = {}
-    if (!formData.title.trim()) newErrors.title = 'Le titre est requis'
-    if (!formData.description.trim()) newErrors.description = 'La description est requise'
-    if (!formData.location.trim()) newErrors.location = 'Le lieu est requis'
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    if (!data.title?.trim()) newErrors.title = 'Le titre est requis'
+    if (!data.description?.trim()) newErrors.description = 'La description est requise'
+    if (!data.location?.trim()) newErrors.location = 'Le lieu est requis'
+    return newErrors
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!validateForm()) return
-
-    try {
-      if (editingItem) {
-        await reportsAPI.update(editingItem.id, formData)
-      } else {
-        await reportsAPI.create(formData)
-      }
-      
-      fetchReports()
-      closeModal()
-      alert(editingItem ? 'Signalement modifié avec succès' : 'Signalement créé avec succès')
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error)
-      alert('Erreur lors de la sauvegarde')
-    }
-  }
-
-  const handleEdit = (item) => {
-    setEditingItem(item)
-    setFormData({
+  const {
+    items: reports,
+    loading,
+    isDrawerOpen,
+    editingItem,
+    formData,
+    errors,
+    openCreate,
+    openEdit,
+    closeDrawer,
+    handleInputChange,
+    handleSubmit,
+    handleDelete
+  } = useQuickEditEntity({
+    fetchAll: reportsAPI.getAll,
+    createItem: reportsAPI.create,
+    updateItem: reportsAPI.update,
+    deleteItem: reportsAPI.delete,
+    initialFormData,
+    mapItemToFormData: (item) => ({
       title: item.title || '',
       description: item.description || '',
       location: item.location || '',
       status: item.status || 'pending',
       categoryId: item.categoryId || '',
       userId: item.userId || ''
-    })
-    setIsModalOpen(true)
-  }
-
-  const handleDelete = async (item) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce signalement ?')) return
-    
-    try {
-      await reportsAPI.delete(item.id)
-      fetchReports()
-      alert('Signalement supprimé avec succès')
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-      alert('Erreur lors de la suppression')
+    }),
+    validate: validateForm,
+    messages: {
+      loadError: 'Erreur lors du chargement des signalements',
+      saveError: 'Erreur lors de la sauvegarde',
+      deleteError: 'Erreur lors de la suppression',
+      createSuccess: 'Signalement créé avec succès',
+      updateSuccess: 'Signalement modifié avec succès',
+      deleteSuccess: 'Signalement supprimé avec succès',
+      confirmDelete: 'Êtes-vous sûr de vouloir supprimer ce signalement ?'
     }
-  }
+  })
 
-  const openCreateModal = () => {
-    setEditingItem(null)
-    setFormData({
-      title: '',
-      description: '',
-      location: '',
-      status: 'pending',
-      categoryId: '',
-      userId: ''
+  const visibleReports = useMemo(() => {
+    const base = filterAndSort({
+      items: reports,
+      query,
+      dateFrom,
+      dateTo,
+      sort,
+      getText: (item) => `${item?.title ?? ''} ${item?.location ?? ''} ${item?.description ?? ''}`,
+      getTitle: (item) => item?.title ?? '',
+      getDate: (item) => item?.createdAt || item?.created_at
     })
-    setErrors({})
-    setIsModalOpen(true)
-  }
 
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setEditingItem(null)
-    setFormData({
-      title: '',
-      description: '',
-      location: '',
-      status: 'pending',
-      categoryId: '',
-      userId: ''
-    })
-    setErrors({})
-  }
+    if (!statusFilter) return base
+    return base.filter((r) => (r?.status || '') === statusFilter)
+  }, [reports, query, dateFrom, dateTo, sort, statusFilter])
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -153,52 +114,82 @@ export default function ReportsPage() {
     )
   }
 
-  const columns = [
-    { key: 'id', label: 'ID' },
-    { key: 'title', label: 'Titre' },
-    { key: 'location', label: 'Lieu' },
-    { 
-      key: 'status', 
-      label: 'Statut',
-      render: (status) => getStatusBadge(status)
-    },
-    { 
-      key: 'description', 
-      label: 'Description',
-      render: (desc) => desc?.substring(0, 50) + '...' 
-    },
-    { 
-      key: 'createdAt', 
-      label: 'Date de création',
-      render: (date) => new Date(date).toLocaleDateString('fr-FR')
-    }
-  ]
-
   return (
     <div className="page">
       <div className="page-header">
         <div>
-          <h1>🚨 Gestion des Signalements</h1>
+          <h1>
+            <AlertTriangle size={22} aria-hidden="true" />
+            Gestion des Signalements
+          </h1>
           <p>Gérez tous les signalements de votre application</p>
         </div>
-        <Button onClick={openCreateModal} icon="➕">
+        <Button onClick={openCreate} icon={<Plus size={16} />}>
           Nouveau Signalement
         </Button>
       </div>
 
-      <DataTable 
-        columns={columns}
-        data={reports}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+      <EntityListToolbar
+        searchValue={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Rechercher (titre, lieu, description)…"
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        dateLabel="Date de création"
+        sortValue={sort}
+        onSortChange={setSort}
+        sortOptions={[
+          { value: 'date_desc', label: 'Plus récents' },
+          { value: 'date_asc', label: 'Plus anciens' },
+          { value: 'alpha_asc', label: 'Titre A → Z' },
+          { value: 'alpha_desc', label: 'Titre Z → A' }
+        ]}
+      >
+        <label className="entity-toolbar-label">
+          Statut
+          <select
+            className="entity-toolbar-input"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filtrer par statut"
+          >
+            <option value="">Tous</option>
+            <option value="pending">En attente</option>
+            <option value="in_progress">En cours</option>
+            <option value="resolved">Résolu</option>
+            <option value="rejected">Rejeté</option>
+          </select>
+        </label>
+      </EntityListToolbar>
+
+      <EntityCardGrid
+        items={visibleReports}
         loading={loading}
+        emptyText="Aucun signalement pour le moment."
+        onItemClick={openEdit}
+        renderTitle={(item) => item.title || 'Sans titre'}
+        renderMeta={(item) => (
+          <>
+            <span>
+              <MapPin size={14} aria-hidden="true" />
+              {item.location || '—'}
+            </span>
+            {getStatusBadge(item.status)}
+          </>
+        )}
+        renderBody={(item) => {
+          const description = item.description || ''
+          return `${description.substring(0, 120)}${description.length > 120 ? '…' : ''}`
+        }}
       />
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        title={editingItem ? 'Modifier le signalement' : 'Créer un nouveau signalement'}
-        size="large"
+      <Drawer
+        isOpen={isDrawerOpen}
+        onClose={closeDrawer}
+        title={editingItem ? 'Modifier rapidement' : 'Créer un signalement'}
+        width={560}
       >
         <form onSubmit={handleSubmit}>
           <Input
@@ -270,15 +261,20 @@ export default function ReportsPage() {
           />
           
           <div className="form-actions">
-            <Button type="button" variant="secondary" onClick={closeModal}>
-              Annuler
+            {editingItem && (
+              <Button type="button" variant="danger" onClick={() => handleDelete(editingItem)} icon={<Trash2 size={16} />}>
+                Supprimer
+              </Button>
+            )}
+            <Button type="button" variant="secondary" onClick={closeDrawer}>
+              Fermer
             </Button>
-            <Button type="submit" variant="success">
-              {editingItem ? 'Mettre à jour' : 'Créer'}
+            <Button type="submit" variant="success" icon={<Save size={16} />}>
+              {editingItem ? 'Enregistrer' : 'Créer'}
             </Button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
     </div>
   )
 }

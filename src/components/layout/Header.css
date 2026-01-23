@@ -1,7 +1,11 @@
+/* ============================================
+   HEADER STYLES - Minimal & Functional
+   ============================================ */
+
 .header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background-color: #FFFFFF;
+  color: #212121;
+  border-bottom: 1px solid #E0E0E0;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -10,7 +14,7 @@
 .header-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem 2rem;
+  padding: 16px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -18,27 +22,28 @@
 
 .header-brand h1 {
   margin: 0;
-  font-size: 1.75rem;
+  font-size: 18px;
   font-weight: 700;
+  color: #1565C0;
 }
 
 .header-brand p {
-  margin: 0.25rem 0 0 0;
-  opacity: 0.9;
-  font-size: 0.9rem;
+  margin: 4px 0 0 0;
+  color: #616161;
+  font-size: 14px;
 }
 
 .header-user {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .user-badge {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  background-color: #E3F2FD;
+  padding: 8px 16px;
+  border-radius: 2px;
+  font-size: 14px;
   font-weight: 600;
+  color: #1565C0;
 }

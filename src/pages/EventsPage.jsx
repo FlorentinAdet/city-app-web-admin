@@ -1,87 +1,63 @@
-import { useState, useEffect } from 'react'
-import DataTable from '../components/common/DataTable'
-import Modal from '../components/common/Modal'
+import { useMemo, useState } from 'react'
+import Drawer from '../components/common/Drawer'
+import EntityCardGrid from '../components/common/EntityCardGrid'
+import EntityListToolbar from '../components/common/EntityListToolbar'
 import Input from '../components/common/Input'
 import Button from '../components/common/Button'
 import { eventsAPI } from '../services/api'
+import useQuickEditEntity from '../hooks/useQuickEditEntity'
+import { filterAndSort } from '../utils/listFiltering'
 import './PageStyles.css'
+import { Calendar, MapPin, Plus, Save, Trash2 } from 'lucide-react'
 
 export default function EventsPage() {
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState(null)
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    location: '',
-    startDate: '',
-    endDate: '',
-    imageUrl: '',
-    organizerId: ''
-  })
-  const [errors, setErrors] = useState({})
+  const [query, setQuery] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [sort, setSort] = useState('date_asc')
 
-  useEffect(() => {
-    fetchEvents()
-  }, [])
+  const initialFormData = useMemo(
+    () => ({
+      title: '',
+      description: '',
+      location: '',
+      startDate: '',
+      endDate: '',
+      imageUrl: '',
+      organizerId: ''
+    }),
+    []
+  )
 
-  const fetchEvents = async () => {
-    setLoading(true)
-    try {
-      const response = await eventsAPI.getAll()
-      setEvents(response.data)
-    } catch (error) {
-      console.error('Erreur lors du chargement des événements:', error)
-      alert('Erreur lors du chargement des événements')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const validateForm = () => {
+  const validateForm = (data) => {
     const newErrors = {}
-    if (!formData.title.trim()) newErrors.title = 'Le titre est requis'
-    if (!formData.description.trim()) newErrors.description = 'La description est requise'
-    if (!formData.location.trim()) newErrors.location = 'Le lieu est requis'
-    if (!formData.startDate) newErrors.startDate = 'La date de début est requise'
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    if (!data.title?.trim()) newErrors.title = 'Le titre est requis'
+    if (!data.description?.trim()) newErrors.description = 'La description est requise'
+    if (!data.location?.trim()) newErrors.location = 'Le lieu est requis'
+    if (!data.startDate) newErrors.startDate = 'La date de début est requise'
+    return newErrors
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!validateForm()) return
-
-    try {
-      if (editingItem) {
-        await eventsAPI.update(editingItem.id, formData)
-      } else {
-        await eventsAPI.create(formData)
-      }
-      
-      fetchEvents()
-      closeModal()
-      alert(editingItem ? 'Événement modifié avec succès' : 'Événement créé avec succès')
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error)
-      alert('Erreur lors de la sauvegarde')
-    }
-  }
-
-  const handleEdit = (item) => {
-    setEditingItem(item)
-    setFormData({
+  const {
+    items: events,
+    loading,
+    isDrawerOpen,
+    editingItem,
+    formData,
+    errors,
+    openCreate,
+    openEdit,
+    closeDrawer,
+    handleInputChange,
+    handleSubmit,
+    handleDelete
+  } = useQuickEditEntity({
+    fetchAll: eventsAPI.getAll,
+    createItem: eventsAPI.create,
+    updateItem: eventsAPI.update,
+    deleteItem: eventsAPI.delete,
+    initialFormData,
+    mapItemToFormData: (item) => ({
       title: item.title || '',
       description: item.description || '',
       location: item.location || '',
@@ -89,94 +65,101 @@ export default function EventsPage() {
       endDate: item.endDate ? item.endDate.split('T')[0] : '',
       imageUrl: item.imageUrl || '',
       organizerId: item.organizerId || ''
-    })
-    setIsModalOpen(true)
-  }
-
-  const handleDelete = async (item) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet événement ?')) return
-    
-    try {
-      await eventsAPI.delete(item.id)
-      fetchEvents()
-      alert('Événement supprimé avec succès')
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-      alert('Erreur lors de la suppression')
+    }),
+    validate: validateForm,
+    messages: {
+      loadError: 'Erreur lors du chargement des événements',
+      saveError: 'Erreur lors de la sauvegarde',
+      deleteError: 'Erreur lors de la suppression',
+      createSuccess: 'Événement créé avec succès',
+      updateSuccess: 'Événement modifié avec succès',
+      deleteSuccess: 'Événement supprimé avec succès',
+      confirmDelete: 'Êtes-vous sûr de vouloir supprimer cet événement ?'
     }
-  }
+  })
 
-  const openCreateModal = () => {
-    setEditingItem(null)
-    setFormData({
-      title: '',
-      description: '',
-      location: '',
-      startDate: '',
-      endDate: '',
-      imageUrl: '',
-      organizerId: ''
+  const visibleEvents = useMemo(() => {
+    return filterAndSort({
+      items: events,
+      query,
+      dateFrom,
+      dateTo,
+      sort,
+      getText: (item) => `${item?.title ?? ''} ${item?.location ?? ''} ${item?.description ?? ''}`,
+      getTitle: (item) => item?.title ?? '',
+      getDate: (item) => item?.startDate || item?.start_date || item?.createdAt || item?.created_at
     })
-    setErrors({})
-    setIsModalOpen(true)
-  }
+  }, [events, query, dateFrom, dateTo, sort])
 
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setEditingItem(null)
-    setFormData({
-      title: '',
-      description: '',
-      location: '',
-      startDate: '',
-      endDate: '',
-      imageUrl: '',
-      organizerId: ''
-    })
-    setErrors({})
+  const formatDate = (d) => {
+    if (!d) return '—'
+    const date = new Date(d)
+    return isNaN(date.getTime()) ? '—' : date.toLocaleDateString('fr-FR')
   }
-
-  const columns = [
-    { key: 'id', label: 'ID' },
-    { key: 'title', label: 'Titre' },
-    { key: 'location', label: 'Lieu' },
-    { 
-      key: 'startDate', 
-      label: 'Date de début',
-      render: (date) => new Date(date).toLocaleDateString('fr-FR')
-    },
-    { 
-      key: 'description', 
-      label: 'Description',
-      render: (desc) => desc?.substring(0, 50) + '...' 
-    }
-  ]
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
-          <h1>🎉 Gestion des Événements</h1>
+          <h1>
+            <Calendar size={22} aria-hidden="true" />
+            Gestion des Événements
+          </h1>
           <p>Gérez tous les événements de votre application</p>
         </div>
-        <Button onClick={openCreateModal} icon="➕">
+        <Button onClick={openCreate} icon={<Plus size={16} />}>
           Nouvel Événement
         </Button>
       </div>
 
-      <DataTable 
-        columns={columns}
-        data={events}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        loading={loading}
+      <EntityListToolbar
+        searchValue={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Rechercher (titre, lieu, description)…"
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        dateLabel="Date (début)"
+        sortValue={sort}
+        onSortChange={setSort}
+        sortOptions={[
+          { value: 'date_asc', label: 'Date (début) croissante' },
+          { value: 'date_desc', label: 'Date (début) décroissante' },
+          { value: 'alpha_asc', label: 'Titre A → Z' },
+          { value: 'alpha_desc', label: 'Titre Z → A' }
+        ]}
       />
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        title={editingItem ? "Modifier l'événement" : 'Créer un nouvel événement'}
-        size="large"
+      <EntityCardGrid
+        items={visibleEvents}
+        loading={loading}
+        emptyText="Aucun événement pour le moment."
+        onItemClick={openEdit}
+        renderTitle={(item) => item.title || 'Sans titre'}
+        renderMeta={(item) => (
+          <>
+            <span>
+              <MapPin size={14} aria-hidden="true" />
+              {item.location || '—'}
+            </span>
+            <span>
+              <Calendar size={14} aria-hidden="true" />
+              {formatDate(item.startDate)}
+            </span>
+          </>
+        )}
+        renderBody={(item) => {
+          const description = item.description || ''
+          return `${description.substring(0, 120)}${description.length > 120 ? '…' : ''}`
+        }}
+      />
+
+      <Drawer
+        isOpen={isDrawerOpen}
+        onClose={closeDrawer}
+        title={editingItem ? "Modifier rapidement" : 'Créer un événement'}
+        width={560}
       >
         <form onSubmit={handleSubmit}>
           <Input
@@ -249,15 +232,20 @@ export default function EventsPage() {
           />
           
           <div className="form-actions">
-            <Button type="button" variant="secondary" onClick={closeModal}>
-              Annuler
+            {editingItem && (
+              <Button type="button" variant="danger" onClick={() => handleDelete(editingItem)} icon={<Trash2 size={16} />}>
+                Supprimer
+              </Button>
+            )}
+            <Button type="button" variant="secondary" onClick={closeDrawer}>
+              Fermer
             </Button>
-            <Button type="submit" variant="success">
-              {editingItem ? 'Mettre à jour' : 'Créer'}
+            <Button type="submit" variant="success" icon={<Save size={16} />}>
+              {editingItem ? 'Enregistrer' : 'Créer'}
             </Button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
     </div>
   )
 }

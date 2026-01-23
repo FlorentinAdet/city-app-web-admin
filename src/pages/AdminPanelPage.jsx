@@ -5,8 +5,7 @@ import Modal from '../components/common/Modal'
 import DataTable from '../components/common/DataTable'
 import { adminAPI } from '../services/api'
 import './PageStyles.css'
-
-const API_URL = import.meta.env.VITE_API_URL || '/api'
+import { MapPin, Plus, Shield, User } from 'lucide-react'
 
 export default function AdminPanelPage() {
   const [activeTab, setActiveTab] = useState('cities')
@@ -14,7 +13,7 @@ export default function AdminPanelPage() {
   const [admins, setAdmins] = useState([])
   const [loading, setLoading] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [modalType, setModalType] = useState('city') // 'city' or 'admin'
+  const [modalType, setModalType] = useState('city')
   const [error, setError] = useState('')
   const [token] = useState(() => localStorage.getItem('admin_token'))
 
@@ -32,6 +31,7 @@ export default function AdminPanelPage() {
     try {
       const res = await adminAPI.getCities()
       setCities(res.data)
+      setError('')
     } catch (err) {
       setError('Erreur lors du chargement des villes')
       console.error(err)
@@ -45,6 +45,7 @@ export default function AdminPanelPage() {
     try {
       const res = await adminAPI.getAdmins()
       setAdmins(res.data)
+      setError('')
     } catch (err) {
       setError('Erreur lors du chargement des admins')
       console.error(err)
@@ -160,87 +161,91 @@ export default function AdminPanelPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1>🔑 Panneau Superadmin</h1>
+          <h1>
+            <Shield size={22} aria-hidden="true" />
+            Panneau Superadmin
+          </h1>
           <p>Gérez les villes et les comptes administrateurs</p>
         </div>
       </div>
 
-      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', borderBottom: '2px solid #e0e0e0', paddingBottom: '1rem' }}>
+      <div className="tabs">
         <button
+          className={`tab ${activeTab === 'cities' ? 'active' : ''}`}
           onClick={() => setActiveTab('cities')}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: activeTab === 'cities' ? '#667eea' : '#f0f0f0',
-            color: activeTab === 'cities' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            transition: 'all 0.3s ease'
-          }}
         >
-          🏙️ Villes
+          <MapPin size={16} aria-hidden="true" />
+          Villes
         </button>
         <button
+          className={`tab ${activeTab === 'admins' ? 'active' : ''}`}
           onClick={() => setActiveTab('admins')}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: activeTab === 'admins' ? '#667eea' : '#f0f0f0',
-            color: activeTab === 'admins' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            transition: 'all 0.3s ease'
-          }}
         >
-          👤 Administrateurs
+          <User size={16} aria-hidden="true" />
+          Administrateurs
         </button>
       </div>
 
-      {error && <div style={{ color: '#dc3545', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div className="page-error">{error}</div>}
 
       {activeTab === 'cities' && (
         <div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <Button onClick={openCityModal} variant="primary" icon="➕">
-              Nouvelle Ville
+          <div style={{ marginBottom: 'var(--space-xl)' }}>
+            <Button onClick={openCityModal} variant="primary" size="md" icon={<Plus size={16} />}>
+              Créer une ville
             </Button>
           </div>
-          <DataTable
-            columns={cityColumns}
-            data={cities}
-            onEdit={() => {}}
-            onDelete={() => {}}
-            loading={loading}
-          />
+          <div className="card">
+            <DataTable
+              columns={cityColumns}
+              data={cities}
+              onEdit={() => {}}
+              onDelete={() => {}}
+              loading={loading}
+            />
+          </div>
         </div>
       )}
 
       {activeTab === 'admins' && (
         <div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <Button onClick={openAdminModal} variant="primary" icon="➕">
-              Nouvel Admin
+          <div style={{ marginBottom: 'var(--space-xl)' }}>
+            <Button onClick={openAdminModal} variant="primary" size="md" icon={<Plus size={16} />}>
+              Créer un administrateur
             </Button>
           </div>
-          <DataTable
-            columns={adminColumns}
-            data={admins}
-            onEdit={() => {}}
-            onDelete={handleDeleteAdmin}
-            loading={loading}
-          />
+          <div className="card">
+            <DataTable
+              columns={adminColumns}
+              data={admins}
+              onEdit={() => {}}
+              onDelete={handleDeleteAdmin}
+              loading={loading}
+            />
+          </div>
         </div>
       )}
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalType === 'city' ? 'Créer une nouvelle ville' : 'Créer un nouvel administrateur'}
+        title={
+          modalType === 'city' ? (
+            <>
+              <MapPin size={18} aria-hidden="true" />
+              Créer une nouvelle ville
+            </>
+          ) : (
+            <>
+              <User size={18} aria-hidden="true" />
+              Créer un nouvel administrateur
+            </>
+          )
+        }
+        size="medium"
       >
         {modalType === 'city' ? (
-          <form onSubmit={handleCreateCity}>
+          <form onSubmit={handleCreateCity} className="form-section">
             <Input
               label="Nom de la ville"
               name="name"
@@ -264,12 +269,12 @@ export default function AdminPanelPage() {
                 Annuler
               </Button>
               <Button type="submit" variant="success">
-                Créer
+                Créer la ville
               </Button>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleCreateAdmin}>
+          <form onSubmit={handleCreateAdmin} className="form-section">
             <Input
               label="Email"
               name="email"
@@ -288,7 +293,7 @@ export default function AdminPanelPage() {
               onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
               required
               error={errors.password}
-              placeholder="••••••••"
+              placeholder="Minimum 8 caractères"
             />
             <div className="input-group">
               <label htmlFor="city" className="input-label">
@@ -298,7 +303,7 @@ export default function AdminPanelPage() {
                 id="city"
                 value={adminForm.city_id}
                 onChange={(e) => setAdminForm({ ...adminForm, city_id: e.target.value })}
-                className="input"
+                className={`input ${errors.city_id ? 'input-error' : ''}`}
               >
                 <option value="">Sélectionner une ville</option>
                 {cities.map((city) => (
@@ -310,9 +315,7 @@ export default function AdminPanelPage() {
               {errors.city_id && <span className="error-message">{errors.city_id}</span>}
             </div>
             <div className="input-group">
-              <label htmlFor="role" className="input-label">
-                Rôle
-              </label>
+              <label htmlFor="role" className="input-label">Rôle</label>
               <select
                 id="role"
                 value={adminForm.role}
@@ -328,7 +331,7 @@ export default function AdminPanelPage() {
                 Annuler
               </Button>
               <Button type="submit" variant="success">
-                Créer
+                Créer l'admin
               </Button>
             </div>
           </form>
@@ -337,3 +340,4 @@ export default function AdminPanelPage() {
     </div>
   )
 }
+
