@@ -5,11 +5,13 @@ import Input from '../components/common/Input'
 import Button from '../components/common/Button'
 import { usersAPI } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { useConfirmDialog } from '../context/ConfirmDialogContext'
 import './PageStyles.css'
 import { Plus, Users as UsersIcon } from 'lucide-react'
 
 export default function UsersPage() {
   const toast = useToast()
+  const { confirm } = useConfirmDialog()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -92,7 +94,16 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (item) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return
+    const shouldDelete = await confirm({
+      title: 'Confirmer la suppression',
+      message: 'Êtes-vous sûr de vouloir supprimer cet utilisateur ?',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      confirmVariant: 'danger',
+      cancelVariant: 'secondary'
+    })
+
+    if (!shouldDelete) return
     
     try {
       await usersAPI.delete(item.id)

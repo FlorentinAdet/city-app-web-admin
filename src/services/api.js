@@ -92,6 +92,26 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`)
 }
 
+// Registration Forms API (admin)
+export const registrationFormsAPI = {
+  getAll: () => api.get('/registration-forms'),
+  getById: (id) => api.get(`/registration-forms/${id}`),
+  create: (data) => api.post('/registration-forms', data),
+  update: (id, data) => api.put(`/registration-forms/${id}`, data),
+  // Server archives the form (status=archived)
+  delete: (id) => api.delete(`/registration-forms/${id}`),
+  getSubmissions: (id) => api.get(`/registration-forms/${id}/submissions`)
+}
+
+// Registration Form Templates API (admin)
+export const registrationFormTemplatesAPI = {
+  getAll: (params) => api.get('/registration-form-templates', { params }),
+  getById: (id) => api.get(`/registration-form-templates/${id}`),
+  create: (data) => api.post('/registration-form-templates', data),
+  update: (id, data) => api.put(`/registration-form-templates/${id}`, data),
+  delete: (id) => api.delete(`/registration-form-templates/${id}`)
+}
+
 // Cities API
 export const citiesAPI = {
   getAll: () => api.get('/cities'),

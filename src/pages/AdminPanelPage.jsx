@@ -5,11 +5,13 @@ import Modal from '../components/common/Modal'
 import DataTable from '../components/common/DataTable'
 import { adminAPI } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { useConfirmDialog } from '../context/ConfirmDialogContext'
 import './PageStyles.css'
 import { MapPin, Plus, Shield, User } from 'lucide-react'
 
 export default function AdminPanelPage() {
   const toast = useToast()
+  const { confirm } = useConfirmDialog()
   const [activeTab, setActiveTab] = useState('cities')
   const [cities, setCities] = useState([])
   const [admins, setAdmins] = useState([])
@@ -110,7 +112,16 @@ export default function AdminPanelPage() {
   }
 
   const handleDeleteAdmin = async (admin) => {
-    if (!confirm(`Êtes-vous sûr de vouloir désactiver ${admin.email} ?`)) return
+    const shouldDisable = await confirm({
+      title: 'Confirmer la désactivation',
+      message: `Êtes-vous sûr de vouloir désactiver ${admin.email} ?`,
+      confirmText: 'Désactiver',
+      cancelText: 'Annuler',
+      confirmVariant: 'danger',
+      cancelVariant: 'secondary'
+    })
+
+    if (!shouldDisable) return
     try {
       await adminAPI.deleteAdmin(admin.id)
       fetchAdmins()

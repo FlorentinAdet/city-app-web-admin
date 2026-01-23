@@ -5,12 +5,22 @@ import MainLayout from './components/layout/MainLayout'
 import HomePage from './pages/HomePage'
 import NewsPage from './pages/NewsPage'
 import EventsPage from './pages/EventsPage'
+import RegistrationFormsPage from './pages/RegistrationFormsPage'
 import ReportsPage from './pages/ReportsPage'
 import UsersPage from './pages/UsersPage'
 import LoginPage from './pages/LoginPage'
 import AdminPanelPage from './pages/AdminPanelPage'
 import { useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
+import { ConfirmDialogProvider } from './context/ConfirmDialogContext'
+
+function AppProviders({ children }) {
+  return (
+    <ToastProvider>
+      <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
+    </ToastProvider>
+  )
+}
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home')
@@ -35,20 +45,20 @@ function App() {
   // Show login if not authenticated
   if (!token || !admin) {
     return (
-      <ToastProvider>
+      <AppProviders>
         <LoginPage />
-      </ToastProvider>
+      </AppProviders>
     )
   }
 
   // Show admin panel if user is superadmin
   if (admin.role === 'superadmin') {
     return (
-      <ToastProvider>
+      <AppProviders>
         <MainLayout title="Panel Superadmin" activePage="admin-panel" onPageChange={handlePageChange}>
           <AdminPanelPage />
         </MainLayout>
-      </ToastProvider>
+      </AppProviders>
     )
   }
 
@@ -61,6 +71,8 @@ function App() {
         return <NewsPage />
       case 'events':
         return <EventsPage />
+      case 'registration':
+        return <RegistrationFormsPage />
       case 'reports':
         return <ReportsPage />
       case 'users':
@@ -71,11 +83,11 @@ function App() {
   }
 
   return (
-    <ToastProvider>
+    <AppProviders>
       <MainLayout title="Tableau de bord" activePage={currentPage} onPageChange={handlePageChange}>
         {renderPage()}
       </MainLayout>
-    </ToastProvider>
+    </AppProviders>
   )
 }
 

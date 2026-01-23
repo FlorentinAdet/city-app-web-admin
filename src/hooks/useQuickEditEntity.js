@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useToast } from '../context/ToastContext'
+import { useConfirmDialog } from '../context/ConfirmDialogContext'
 
 export default function useQuickEditEntity({
   fetchAll,
@@ -12,6 +13,7 @@ export default function useQuickEditEntity({
   messages
 }) {
   const toast = useToast()
+  const { confirm } = useConfirmDialog()
   const mergedMessages = useMemo(
     () => ({
       loadError: 'Erreur lors du chargement',
@@ -104,7 +106,16 @@ export default function useQuickEditEntity({
 
   const handleDelete = async (item) => {
     if (!item) return
-    if (!confirm(mergedMessages.confirmDelete)) return
+    const shouldDelete = await confirm({
+      title: 'Confirmer la suppression',
+      message: mergedMessages.confirmDelete,
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      confirmVariant: 'danger',
+      cancelVariant: 'secondary'
+    })
+
+    if (!shouldDelete) return
 
     try {
       await deleteItem(item.id)

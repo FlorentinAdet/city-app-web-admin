@@ -16,6 +16,26 @@ Le système de notifications toast permet d'afficher des retours utilisateurs lo
 - **Durée** : 5 secondes par défaut (configurable)
 - **Fermeture** : Automatique après la durée ou manuelle via le bouton ×
 
+## Confirmations de suppression (popup)
+
+Les confirmations (ex: suppression) ne passent plus par `confirm()` du navigateur : elles utilisent un popup (Modal) via `ConfirmDialogProvider`.
+
+```jsx
+import { useConfirmDialog } from '../context/ConfirmDialogContext'
+
+const { confirm } = useConfirmDialog()
+
+const ok = await confirm({
+  title: 'Confirmer la suppression',
+  message: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
+  confirmText: 'Supprimer',
+  cancelText: 'Annuler',
+  confirmVariant: 'danger'
+})
+
+if (!ok) return
+```
+
 ## Utilisation
 
 ### Import

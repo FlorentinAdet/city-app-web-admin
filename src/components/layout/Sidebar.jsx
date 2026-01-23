@@ -1,6 +1,6 @@
 import './Sidebar.css'
 import { useAuth } from '../../context/AuthContext'
-import { AlertTriangle, Calendar, Home, LogOut, Newspaper, Shield, Users, X } from 'lucide-react'
+import { AlertTriangle, Calendar, ClipboardList, Home, LogOut, Newspaper, Shield, Users, X } from 'lucide-react'
 
 export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cityName, role }) {
   const { logout, admin } = useAuth()
@@ -12,6 +12,7 @@ export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cit
         { id: 'home', icon: Home, label: 'Accueil' },
         { id: 'news', icon: Newspaper, label: 'Actualités' },
         { id: 'events', icon: Calendar, label: 'Événements' },
+        { id: 'registration', icon: ClipboardList, label: 'Inscription' },
         { id: 'reports', icon: AlertTriangle, label: 'Signalements' },
         { id: 'users', icon: Users, label: 'Utilisateurs' },
       ]
