@@ -3,8 +3,9 @@ import Drawer from '../components/common/Drawer'
 import EntityCardGrid from '../components/common/EntityCardGrid'
 import EntityListToolbar from '../components/common/EntityListToolbar'
 import Input from '../components/common/Input'
+import ImageUploadField from '../components/common/ImageUploadField'
 import Button from '../components/common/Button'
-import { eventsAPI } from '../services/api'
+import { eventsAPI, uploadsAPI } from '../services/api'
 import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
 import './PageStyles.css'
@@ -20,11 +21,10 @@ export default function EventsPage() {
     () => ({
       title: '',
       description: '',
-      location: '',
-      startDate: '',
-      endDate: '',
-      imageUrl: '',
-      organizerId: ''
+      lieu: '',
+      start_date: '',
+      end_date: '',
+      image: ''
     }),
     []
   )
@@ -33,8 +33,7 @@ export default function EventsPage() {
     const newErrors = {}
     if (!data.title?.trim()) newErrors.title = 'Le titre est requis'
     if (!data.description?.trim()) newErrors.description = 'La description est requise'
-    if (!data.location?.trim()) newErrors.location = 'Le lieu est requis'
-    if (!data.startDate) newErrors.startDate = 'La date de début est requise'
+    if (!data.start_date) newErrors.start_date = 'La date de début est requise'
     return newErrors
   }
 
@@ -60,11 +59,11 @@ export default function EventsPage() {
     mapItemToFormData: (item) => ({
       title: item.title || '',
       description: item.description || '',
-      location: item.location || '',
-      startDate: item.startDate ? item.startDate.split('T')[0] : '',
-      endDate: item.endDate ? item.endDate.split('T')[0] : '',
-      imageUrl: item.imageUrl || '',
-      organizerId: item.organizerId || ''
+      // schema.prisma: events.lieu / events.image / events.start_date / events.end_date
+      lieu: item.lieu || item.location || '',
+      start_date: (item.start_date || item.startDate || '') ? String(item.start_date || item.startDate).split('T')[0] : '',
+      end_date: (item.end_date || item.endDate || '') ? String(item.end_date || item.endDate).split('T')[0] : '',
+      image: item.image || item.imageUrl || ''
     }),
     validate: validateForm,
     messages: {
@@ -85,9 +84,9 @@ export default function EventsPage() {
       dateFrom,
       dateTo,
       sort,
-      getText: (item) => `${item?.title ?? ''} ${item?.location ?? ''} ${item?.description ?? ''}`,
+      getText: (item) => `${item?.title ?? ''} ${item?.lieu ?? item?.location ?? ''} ${item?.description ?? ''}`,
       getTitle: (item) => item?.title ?? '',
-      getDate: (item) => item?.startDate || item?.start_date || item?.createdAt || item?.created_at
+      getDate: (item) => item?.start_date || item?.startDate || item?.createdAt || item?.created_at
     })
   }, [events, query, dateFrom, dateTo, sort])
 
@@ -136,16 +135,19 @@ export default function EventsPage() {
         loading={loading}
         emptyText="Aucun événement pour le moment."
         onItemClick={openEdit}
+        renderCover={(item) =>
+          item?.image ? <img src={item.image} alt={item?.title ? `Image - ${item.title}` : "Image événement"} loading="lazy" /> : null
+        }
         renderTitle={(item) => item.title || 'Sans titre'}
         renderMeta={(item) => (
           <>
             <span>
               <MapPin size={14} aria-hidden="true" />
-              {item.location || '—'}
+              {item.lieu || item.location || '—'}
             </span>
             <span>
               <Calendar size={14} aria-hidden="true" />
-              {formatDate(item.startDate)}
+              {formatDate(item.start_date || item.startDate)}
             </span>
           </>
         )}
@@ -174,11 +176,10 @@ export default function EventsPage() {
           
           <Input
             label="Lieu"
-            name="location"
-            value={formData.location}
+            name="lieu"
+            value={formData.lieu}
             onChange={handleInputChange}
-            required
-            error={errors.location}
+            error={errors.lieu}
             placeholder="Lieu de l'événement"
           />
           
@@ -197,38 +198,33 @@ export default function EventsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <Input
               label="Date de début"
-              name="startDate"
+              name="start_date"
               type="date"
-              value={formData.startDate}
+              value={formData.start_date}
               onChange={handleInputChange}
               required
-              error={errors.startDate}
+              error={errors.start_date}
             />
             
             <Input
               label="Date de fin"
-              name="endDate"
+              name="end_date"
               type="date"
-              value={formData.endDate}
+              value={formData.end_date}
               onChange={handleInputChange}
             />
           </div>
-          
-          <Input
-            label="URL de l'image"
-            name="imageUrl"
-            value={formData.imageUrl}
-            onChange={handleInputChange}
-            placeholder="https://example.com/image.jpg"
-          />
-          
-          <Input
-            label="ID de l'organisateur"
-            name="organizerId"
-            type="number"
-            value={formData.organizerId}
-            onChange={handleInputChange}
-            placeholder="ID de l'organisateur (optionnel)"
+
+          <ImageUploadField
+            label="Image"
+            value={formData.image}
+            onChangeUrl={(url) => {
+              handleInputChange({ target: { name: 'image', value: url } })
+            }}
+            uploadFn={async (file) => {
+              const res = await uploadsAPI.uploadImage(file)
+              return res.data
+            }}
           />
           
           <div className="form-actions">

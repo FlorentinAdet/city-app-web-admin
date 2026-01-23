@@ -1,12 +1,12 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+// Some env files include accidental leading/trailing spaces (e.g. "VITE_API_URL= http://...")
+// Trim to avoid malformed base URLs.
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').trim()
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  // Let axios set Content-Type per request (JSON vs multipart)
 })
 
 // Attach Authorization header if token is stored
@@ -23,8 +23,21 @@ api.interceptors.request.use((config) => {
 export const newsAPI = {
   getAll: () => api.get('/news'),
   getById: (id) => api.get(`/news/${id}`),
-  create: (data) => api.post('/news', data),
-  update: (id, data) => api.put(`/news/${id}`, data),
+  create: (data) => {
+    const payload = { ...data }
+    // Persist in the new canonical field name (schema.prisma: news.image)
+    payload.image = data?.image ?? data?.photo ?? data?.imageUrl
+    delete payload.photo
+    delete payload.imageUrl
+    return api.post('/news', payload)
+  },
+  update: (id, data) => {
+    const payload = { ...data }
+    payload.image = data?.image ?? data?.photo ?? data?.imageUrl
+    delete payload.photo
+    delete payload.imageUrl
+    return api.put(`/news/${id}`, payload)
+  },
   delete: (id) => api.delete(`/news/${id}`)
 }
 
@@ -32,8 +45,32 @@ export const newsAPI = {
 export const eventsAPI = {
   getAll: () => api.get('/events'),
   getById: (id) => api.get(`/events/${id}`),
-  create: (data) => api.post('/events', data),
-  update: (id, data) => api.put(`/events/${id}`, data),
+  create: (data) => {
+    const payload = { ...data }
+    payload.image = data?.image ?? data?.photo ?? data?.imageUrl
+    payload.lieu = data?.lieu ?? data?.location
+    payload.start_date = data?.start_date ?? data?.startDate
+    payload.end_date = data?.end_date ?? data?.endDate
+    delete payload.photo
+    delete payload.imageUrl
+    delete payload.location
+    delete payload.startDate
+    delete payload.endDate
+    return api.post('/events', payload)
+  },
+  update: (id, data) => {
+    const payload = { ...data }
+    payload.image = data?.image ?? data?.photo ?? data?.imageUrl
+    payload.lieu = data?.lieu ?? data?.location
+    payload.start_date = data?.start_date ?? data?.startDate
+    payload.end_date = data?.end_date ?? data?.endDate
+    delete payload.photo
+    delete payload.imageUrl
+    delete payload.location
+    delete payload.startDate
+    delete payload.endDate
+    return api.put(`/events/${id}`, payload)
+  },
   delete: (id) => api.delete(`/events/${id}`)
 }
 
@@ -68,6 +105,17 @@ export const authAPI = {
   post: (url, data, config) => api.post(url, data, config),
   put: (url, data, config) => api.put(url, data, config),
   delete: (url, config) => api.delete(url, config)
+}
+
+// Uploads API
+export const uploadsAPI = {
+  uploadImage: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    // IMPORTANT: do not force Content-Type here.
+    // The browser must set the multipart boundary, otherwise multer won't receive the file.
+    return api.post('/uploads/image', form)
+  }
 }
 
 // Admin API (superadmin only)

@@ -3,7 +3,7 @@ import Input from '../components/common/Input'
 import Button from '../components/common/Button'
 import { authAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import './PageStyles.css'
+import './LoginPage.css'
 import { Lock } from 'lucide-react'
 
 export default function LoginPage({ onSuccess }) {
@@ -30,18 +30,22 @@ export default function LoginPage({ onSuccess }) {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 480 }}>
-      <div className="page-header">
-        <div>
-          <h1>
-            <Lock size={22} aria-hidden="true" />
-            Connexion Administrateur
-          </h1>
-          <p>Accédez au panneau de votre ville</p>
+    <div className="login-shell">
+      <div className="login-card">
+        <div className="login-cover">
+          <div className="login-brand">
+            <div className="login-badge" aria-hidden="true">
+              <Lock size={18} />
+            </div>
+            <div>
+              <h1 className="login-title">Connexion Administrateur</h1>
+              <p className="login-subtitle">Accédez au panneau de votre ville</p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <form onSubmit={handleSubmit}>
+        <div className="login-body">
+          <form className="login-form" onSubmit={handleSubmit}>
         <Input
           label="Email"
           name="email"
@@ -62,14 +66,16 @@ export default function LoginPage({ onSuccess }) {
           placeholder="••••••••"
         />
 
-        {error && <div className="error-message" style={{ marginBottom: '1rem' }}>{error}</div>}
+        {error && <div className="login-error">{error}</div>}
 
-        <div className="form-actions">
+        <div className="login-actions">
           <Button type="submit" variant="primary" disabled={loading}>
             {loading ? 'Connexion...' : 'Se connecter'}
           </Button>
         </div>
-      </form>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }

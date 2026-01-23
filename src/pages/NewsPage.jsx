@@ -3,8 +3,9 @@ import Drawer from '../components/common/Drawer'
 import EntityCardGrid from '../components/common/EntityCardGrid'
 import EntityListToolbar from '../components/common/EntityListToolbar'
 import Input from '../components/common/Input'
+import ImageUploadField from '../components/common/ImageUploadField'
 import Button from '../components/common/Button'
-import { newsAPI } from '../services/api'
+import { newsAPI, uploadsAPI } from '../services/api'
 import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
 import './PageStyles.css'
@@ -20,9 +21,7 @@ export default function NewsPage() {
     () => ({
       title: '',
       content: '',
-      imageUrl: '',
-      author: '',
-      categoryId: ''
+      image: ''
     }),
     []
   )
@@ -31,7 +30,6 @@ export default function NewsPage() {
     const newErrors = {}
     if (!data.title?.trim()) newErrors.title = 'Le titre est requis'
     if (!data.content?.trim()) newErrors.content = 'Le contenu est requis'
-    if (!data.author?.trim()) newErrors.author = "L'auteur est requis"
     return newErrors
   }
 
@@ -57,9 +55,8 @@ export default function NewsPage() {
     mapItemToFormData: (item) => ({
       title: item.title || '',
       content: item.content || '',
-      imageUrl: item.imageUrl || '',
-      author: item.author || '',
-      categoryId: item.categoryId || ''
+      // schema.prisma: news.image
+      image: item.image || ''
     }),
     validate: validateForm,
     messages: {
@@ -80,7 +77,7 @@ export default function NewsPage() {
       dateFrom,
       dateTo,
       sort,
-      getText: (item) => `${item?.title ?? ''} ${item?.author ?? ''} ${item?.content ?? ''}`,
+          getText: (item) => `${item?.title ?? ''} ${item?.content ?? ''}`,
       getTitle: (item) => item?.title ?? '',
       getDate: (item) => item?.createdAt || item?.created_at
     })
@@ -110,7 +107,7 @@ export default function NewsPage() {
       <EntityListToolbar
         searchValue={query}
         onSearchChange={setQuery}
-        searchPlaceholder="Rechercher (titre, auteur, contenu)…"
+        searchPlaceholder="Rechercher (titre, contenu)…"
         dateFrom={dateFrom}
         dateTo={dateTo}
         onDateFromChange={setDateFrom}
@@ -131,10 +128,12 @@ export default function NewsPage() {
         loading={loading}
         emptyText="Aucune news pour le moment."
         onItemClick={openEdit}
+        renderCover={(item) =>
+          item?.image ? <img src={item.image} alt={item?.title ? `Image - ${item.title}` : 'Image actualité'} loading="lazy" /> : null
+        }
         renderTitle={(item) => item.title || 'Sans titre'}
         renderMeta={(item) => (
           <>
-            <span>{item.author || '—'}</span>
             <span>
               <Calendar size={14} aria-hidden="true" />
               {formatDate(item.createdAt || item.created_at)}
@@ -165,16 +164,6 @@ export default function NewsPage() {
           />
 
           <Input
-            label="Auteur"
-            name="author"
-            value={formData.author}
-            onChange={handleInputChange}
-            required
-            error={errors.author}
-            placeholder="Nom de l'auteur"
-          />
-
-          <Input
             label="Contenu"
             name="content"
             value={formData.content}
@@ -186,21 +175,17 @@ export default function NewsPage() {
             placeholder="Contenu de la news"
           />
 
-          <Input
-            label="URL de l'image"
-            name="imageUrl"
-            value={formData.imageUrl}
-            onChange={handleInputChange}
-            placeholder="https://example.com/image.jpg"
-          />
-
-          <Input
-            label="ID de catégorie"
-            name="categoryId"
-            type="number"
-            value={formData.categoryId}
-            onChange={handleInputChange}
-            placeholder="Optionnel"
+          <ImageUploadField
+            label="Image"
+            value={formData.image}
+            onChangeUrl={(url) => {
+              // mimic Input onChange signature
+              handleInputChange({ target: { name: 'image', value: url } })
+            }}
+            uploadFn={async (file) => {
+              const res = await uploadsAPI.uploadImage(file)
+              return res.data
+            }}
           />
 
           <div className="form-actions">

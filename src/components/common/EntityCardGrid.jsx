@@ -6,6 +6,7 @@ export default function EntityCardGrid({
   emptyText = 'Aucun élément.',
   onItemClick,
   getKey,
+  renderCover,
   renderTitle,
   renderMeta,
   renderBody
@@ -38,6 +39,7 @@ export default function EntityCardGrid({
           className="entity-card"
           onClick={() => onItemClick?.(item)}
         >
+          {renderCover && <div className="entity-card-cover">{renderCover(item)}</div>}
           <h3 className="entity-card-title">{renderTitle?.(item)}</h3>
           {renderMeta && <div className="entity-card-meta">{renderMeta(item)}</div>}
           {renderBody && <p className="entity-card-content">{renderBody(item)}</p>}
