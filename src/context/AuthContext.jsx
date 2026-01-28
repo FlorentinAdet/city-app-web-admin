@@ -25,6 +25,14 @@ export function AuthProvider({ children }) {
     if (city) localStorage.setItem('admin_city', JSON.stringify(city))
   }
 
+  const updateCity = (patch) => {
+    setCity((prev) => {
+      const next = { ...(prev || {}), ...(patch || {}) }
+      localStorage.setItem('admin_city', JSON.stringify(next))
+      return next
+    })
+  }
+
   const logout = () => {
     setToken(null)
     setAdmin(null)
@@ -35,7 +43,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, admin, city, login, logout }}>
+    <AuthContext.Provider value={{ token, admin, city, login, logout, updateCity }}>
       {children}
     </AuthContext.Provider>
   )

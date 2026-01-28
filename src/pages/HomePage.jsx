@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI } from '../services/api'
 import './HomePage.css'
-import { Calendar, FileText, Home, Newspaper, Shield, Users } from 'lucide-react'
+import { Calendar, FileText, Home, Info, Newspaper, Shield, Users } from 'lucide-react'
 
 export default function HomePage({ onNavigate }) {
   const { admin, city } = useAuth()
@@ -36,6 +36,7 @@ export default function HomePage({ onNavigate }) {
   }, [])
 
   const quickLinks = [
+    { id: 'city-info', label: 'Infos ville', icon: Info },
     { id: 'news', label: 'Actualités', icon: Newspaper },
     { id: 'events', label: 'Événements', icon: Calendar },
     { id: 'reports', label: 'Signalements', icon: FileText },

@@ -1,0 +1,86 @@
+.city-info-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.city-info-json {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  min-height: 360px;
+}
+
+.city-info-hint {
+  color: var(--color-gray-600);
+  font-size: 13px;
+}
+
+.city-info-subheader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  font-weight: 600;
+  color: #212121;
+}
+
+.city-info-empty {
+  color: var(--color-gray-600);
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.city-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.city-info-list-row {
+  display: grid;
+  grid-template-columns: 1fr 180px 1fr auto;
+  gap: 12px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+}
+
+.city-info-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.city-info-checkbox {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+}
+
+.city-info-checkbox input {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 768px) {
+  .city-info-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .city-info-actions .btn {
+    width: 100%;
+  }
+
+  .city-info-list-row {
+    grid-template-columns: 1fr;
+  }
+}

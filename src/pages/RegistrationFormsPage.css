@@ -119,6 +119,82 @@
   color: var(--color-gray-600);
 }
 
+.ds-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Inline toggle rows (label on the left, checkbox+text on the right) */
+.ds-inline-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ds-inline-toggle > .form-label,
+.ds-inline-toggle > .input-label {
+  margin: 0;
+}
+
+.ds-inline-toggle .ds-checkbox-row {
+  margin: 0;
+}
+
+.ds-inline-toggle input[type="checkbox"] {
+  margin: 0;
+}
+
+.submissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.submission-card {
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.25));
+  border-radius: 14px;
+  background: var(--card-bg, rgba(255, 255, 255, 0.75));
+  padding: 12px;
+}
+
+.submission-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.submission-title {
+  font-weight: 800;
+  color: var(--text, #0f172a);
+}
+
+.submission-meta {
+  margin-top: 2px;
+  font-size: 0.9rem;
+  color: var(--muted-text, #6b7280);
+}
+
+.submission-body {
+  margin-top: 10px;
+  color: var(--text, #0f172a);
+  opacity: 0.92;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.ds-checkbox-row input[type='checkbox'] {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .preview {
   padding: 14px;
   border-top: 1px solid var(--border-color);

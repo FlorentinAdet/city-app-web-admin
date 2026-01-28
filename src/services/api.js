@@ -19,6 +19,26 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Global auth failure handling: if token is missing/expired/invalid,
+// clear persisted auth and force the app back to the login screen.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status
+    const url = String(error?.config?.url || '')
+    if (status === 401 && !url.includes('/auth/login')) {
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_info')
+      localStorage.removeItem('admin_city')
+      if (typeof window !== 'undefined') {
+        // Keep it simple and robust: reload so AuthProvider rehydrates from storage.
+        window.location.reload()
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 // News API
 export const newsAPI = {
   getAll: () => api.get('/news'),
@@ -118,6 +138,26 @@ export const citiesAPI = {
   getById: (id) => api.get(`/cities/${id}`)
 }
 
+// City Settings API (admin scoped)
+export const citySettingsAPI = {
+  get: (params) => api.get('/city-settings', { params }),
+  save: (settings, params) => api.put('/city-settings', settings, { params })
+}
+
+export const cityProfileAPI = {
+  getMe: (params) => api.get('/city/me', { params }),
+  updateLogo: (logo_url, params) => api.put('/city/logo', { logo_url }, { params })
+}
+
+// Polls API
+export const pollsAPI = {
+  getAll: () => api.get('/polls'),
+  getById: (id) => api.get(`/polls/${id}`),
+  create: (data) => api.post('/polls', data),
+  update: (id, data) => api.put(`/polls/${id}`, data),
+  delete: (id) => api.delete(`/polls/${id}`)
+}
+
 // Auth API
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
@@ -135,6 +175,11 @@ export const uploadsAPI = {
     // IMPORTANT: do not force Content-Type here.
     // The browser must set the multipart boundary, otherwise multer won't receive the file.
     return api.post('/uploads/image', form)
+  },
+  uploadLogo: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/uploads/logo', form)
   }
 }
 

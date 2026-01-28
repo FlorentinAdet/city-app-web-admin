@@ -9,7 +9,8 @@ export default function EntityCardGrid({
   renderCover,
   renderTitle,
   renderMeta,
-  renderBody
+  renderBody,
+  renderActions
 }) {
   const list = Array.isArray(items) ? items : []
   const keyFn = getKey || ((item) => item?.id)
@@ -33,17 +34,29 @@ export default function EntityCardGrid({
   return (
     <div className="entity-grid">
       {list.map((item) => (
-        <button
+        <div
           key={keyFn(item)}
-          type="button"
           className="entity-card"
           onClick={() => onItemClick?.(item)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onItemClick?.(item)
+            }
+          }}
         >
           {renderCover && <div className="entity-card-cover">{renderCover(item)}</div>}
           <h3 className="entity-card-title">{renderTitle?.(item)}</h3>
           {renderMeta && <div className="entity-card-meta">{renderMeta(item)}</div>}
           {renderBody && <p className="entity-card-content">{renderBody(item)}</p>}
-        </button>
+          {renderActions && (
+            <div className="entity-card-actions" onClick={(e) => e.stopPropagation()}>
+              {renderActions(item)}
+            </div>
+          )}
+        </div>
       ))}
     </div>
   )

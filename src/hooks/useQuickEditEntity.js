@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '../context/ToastContext'
 import { useConfirmDialog } from '../context/ConfirmDialogContext'
 
@@ -35,40 +35,86 @@ export default function useQuickEditEntity({
   const [formData, setFormData] = useState(initialFormData)
   const [errors, setErrors] = useState({})
 
+  // Keep latest callbacks/messages without re-creating refresh/effects.
+  const handlersRef = useRef({ fetchAll, createItem, updateItem, deleteItem })
+  const messagesRef = useRef(mergedMessages)
+  const initialFormDataRef = useRef(initialFormData)
+  const mountedRef = useRef(true)
+  const refreshInFlightRef = useRef(false)
+
+  useEffect(() => {
+    handlersRef.current = { fetchAll, createItem, updateItem, deleteItem }
+  }, [fetchAll, createItem, updateItem, deleteItem])
+
+  useEffect(() => {
+    messagesRef.current = mergedMessages
+  }, [mergedMessages])
+
+  useEffect(() => {
+    initialFormDataRef.current = initialFormData
+  }, [initialFormData])
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const resolveMessage = useCallback((key, error) => {
+    const msg = messagesRef.current?.[key]
+    if (typeof msg === 'function') return msg(error)
+
+    // For load errors, surface backend reason when available.
+    if (key === 'loadError') {
+      const backend = error?.response?.data?.error
+      if (backend) return backend
+    }
+
+    return msg
+  }, [])
+
   const refresh = useCallback(async () => {
+    if (refreshInFlightRef.current) return
+    refreshInFlightRef.current = true
     setLoading(true)
     try {
-      const response = await fetchAll()
+      const response = await handlersRef.current.fetchAll()
+      if (!mountedRef.current) return
       setItems(response?.data || [])
     } catch (error) {
-      console.error(mergedMessages.loadError, error)
-      toast.error(mergedMessages.loadError)
+      const msg = resolveMessage('loadError', error) || 'Erreur lors du chargement'
+      console.error(msg, error)
+      toast.error(msg)
     } finally {
-      setLoading(false)
+      if (mountedRef.current) setLoading(false)
+      refreshInFlightRef.current = false
     }
-  }, [fetchAll, mergedMessages.loadError, toast])
+  }, [resolveMessage, toast])
 
   useEffect(() => {
     refresh()
-  }, [refresh])
+    // Intentionally run on mount only; refresh is stable and uses refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const closeDrawer = () => {
     setIsDrawerOpen(false)
     setEditingItem(null)
-    setFormData(initialFormData)
+    setFormData(initialFormDataRef.current)
     setErrors({})
   }
 
   const openCreate = () => {
     setEditingItem(null)
-    setFormData(initialFormData)
+    setFormData(initialFormDataRef.current)
     setErrors({})
     setIsDrawerOpen(true)
   }
 
   const openEdit = (item) => {
     setEditingItem(item)
-    setFormData(mapItemToFormData ? mapItemToFormData(item) : initialFormData)
+    setFormData(mapItemToFormData ? mapItemToFormData(item) : initialFormDataRef.current)
     setErrors({})
     setIsDrawerOpen(true)
   }
@@ -90,17 +136,18 @@ export default function useQuickEditEntity({
 
     try {
       if (editingItem) {
-        await updateItem(editingItem.id, formData)
+        await handlersRef.current.updateItem(editingItem.id, formData)
       } else {
-        await createItem(formData)
+        await handlersRef.current.createItem(formData)
       }
 
       await refresh()
       closeDrawer()
-      toast.success(editingItem ? mergedMessages.updateSuccess : mergedMessages.createSuccess)
+      toast.success(editingItem ? messagesRef.current.updateSuccess : messagesRef.current.createSuccess)
     } catch (error) {
-      console.error(mergedMessages.saveError, error)
-      toast.error(mergedMessages.saveError)
+      const msg = resolveMessage('saveError', error) || 'Erreur lors de la sauvegarde'
+      console.error(msg, error)
+      toast.error(msg)
     }
   }
 
@@ -108,7 +155,7 @@ export default function useQuickEditEntity({
     if (!item) return
     const shouldDelete = await confirm({
       title: 'Confirmer la suppression',
-      message: mergedMessages.confirmDelete,
+      message: messagesRef.current.confirmDelete,
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
       confirmVariant: 'danger',
@@ -118,15 +165,16 @@ export default function useQuickEditEntity({
     if (!shouldDelete) return
 
     try {
-      await deleteItem(item.id)
+      await handlersRef.current.deleteItem(item.id)
       await refresh()
       if (editingItem?.id === item.id) {
         closeDrawer()
       }
-      toast.success(mergedMessages.deleteSuccess)
+      toast.success(messagesRef.current.deleteSuccess)
     } catch (error) {
-      console.error(mergedMessages.deleteError, error)
-      toast.error(mergedMessages.deleteError)
+      const msg = resolveMessage('deleteError', error) || 'Erreur lors de la suppression'
+      console.error(msg, error)
+      toast.error(msg)
     }
   }
 

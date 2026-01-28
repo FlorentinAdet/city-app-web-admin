@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import './styles/DesignSystem.css'
 import './App.css'
 import MainLayout from './components/layout/MainLayout'
@@ -10,6 +11,9 @@ import ReportsPage from './pages/ReportsPage'
 import UsersPage from './pages/UsersPage'
 import LoginPage from './pages/LoginPage'
 import AdminPanelPage from './pages/AdminPanelPage'
+import CityInfoPage from './pages/CityInfoPage'
+import PollsPage from './pages/PollsPage'
+import PublicRegistrationFormPage from './pages/PublicRegistrationFormPage'
 import { useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import { ConfirmDialogProvider } from './context/ConfirmDialogContext'
@@ -22,7 +26,7 @@ function AppProviders({ children }) {
   )
 }
 
-function App() {
+function AdminApp() {
   const [currentPage, setCurrentPage] = useState('home')
   const { token, admin } = useAuth()
 
@@ -44,21 +48,15 @@ function App() {
 
   // Show login if not authenticated
   if (!token || !admin) {
-    return (
-      <AppProviders>
-        <LoginPage />
-      </AppProviders>
-    )
+    return <LoginPage />
   }
 
   // Show admin panel if user is superadmin
   if (admin.role === 'superadmin') {
     return (
-      <AppProviders>
-        <MainLayout title="Panel Superadmin" activePage="admin-panel" onPageChange={handlePageChange}>
-          <AdminPanelPage />
-        </MainLayout>
-      </AppProviders>
+      <MainLayout title="Panel Superadmin" activePage="admin-panel" onPageChange={handlePageChange}>
+        <AdminPanelPage />
+      </MainLayout>
     )
   }
 
@@ -77,16 +75,29 @@ function App() {
         return <ReportsPage />
       case 'users':
         return <UsersPage />
+      case 'city-info':
+      case 'polls':
+        return <PollsPage />
+        return <CityInfoPage />
       default:
         return <HomePage onNavigate={handlePageChange} />
     }
   }
 
   return (
+    <MainLayout title="Tableau de bord" activePage={currentPage} onPageChange={handlePageChange}>
+      {renderPage()}
+    </MainLayout>
+  )
+}
+
+function App() {
+  return (
     <AppProviders>
-      <MainLayout title="Tableau de bord" activePage={currentPage} onPageChange={handlePageChange}>
-        {renderPage()}
-      </MainLayout>
+      <Routes>
+        <Route path="/:citySlug/:formSlug" element={<PublicRegistrationFormPage />} />
+        <Route path="/*" element={<AdminApp />} />
+      </Routes>
     </AppProviders>
   )
 }

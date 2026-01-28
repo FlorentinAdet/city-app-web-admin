@@ -1,8 +1,8 @@
 import './Sidebar.css'
 import { useAuth } from '../../context/AuthContext'
-import { AlertTriangle, Calendar, ClipboardList, Home, LogOut, Newspaper, Shield, Users, X } from 'lucide-react'
+import { AlertTriangle, BarChart3, Calendar, ClipboardList, Home, Info, LogOut, Newspaper, Shield, Users, X } from 'lucide-react'
 
-export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cityName, role }) {
+export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cityName, logoUrl, role }) {
   const { logout, admin } = useAuth()
 
   const resolvedRole = role || admin?.role
@@ -10,8 +10,10 @@ export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cit
     ? [{ id: 'admin-panel', icon: Shield, label: 'Panel Superadmin' }]
     : [
         { id: 'home', icon: Home, label: 'Accueil' },
+        { id: 'city-info', icon: Info, label: 'Informations ville' },
         { id: 'news', icon: Newspaper, label: 'Actualités' },
         { id: 'events', icon: Calendar, label: 'Événements' },
+        { id: 'polls', icon: BarChart3, label: 'Sondages' },
         { id: 'registration', icon: ClipboardList, label: 'Inscription' },
         { id: 'reports', icon: AlertTriangle, label: 'Signalements' },
         { id: 'users', icon: Users, label: 'Utilisateurs' },
@@ -32,7 +34,20 @@ export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cit
     <>
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h1 className="sidebar-title">{(cityName || 'City Hub').toUpperCase()}</h1>
+          <div className="sidebar-brand">
+            {logoUrl && admin?.role !== 'superadmin' && (
+              <img
+                className="sidebar-logo"
+                src={logoUrl}
+                alt=""
+                aria-hidden="true"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            )}
+            <h1 className="sidebar-title">{cityName || 'CityHub'}</h1>
+          </div>
           <button className="sidebar-close" onClick={onClose} aria-label="Fermer le menu">
             <X size={18} aria-hidden="true" />
           </button>

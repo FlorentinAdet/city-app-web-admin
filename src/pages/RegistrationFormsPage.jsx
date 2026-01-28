@@ -19,6 +19,8 @@ import {
   ChevronUp,
   ChevronDown,
   Copy,
+  Users,
+  Link2,
   Eye,
   EyeOff
 } from 'lucide-react'
@@ -41,6 +43,19 @@ const ensureDefinition = (definition) => {
     return { version: 1, ...definition, fields }
   }
   return { ...DEFAULT_DEFINITION }
+}
+
+const toDatetimeLocalInput = (value) => {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n) => String(n).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const mm = pad(d.getMonth() + 1)
+  const dd = pad(d.getDate())
+  const hh = pad(d.getHours())
+  const mi = pad(d.getMinutes())
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
 }
 
 const typeLabel = (type) => {
@@ -74,6 +89,12 @@ export default function RegistrationFormsPage() {
   const [previewEnabled, setPreviewEnabled] = useState(true)
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const [copiedLink, setCopiedLink] = useState(false)
+  const [lastCopiedText, setLastCopiedText] = useState('')
+  const [submissionsOpen, setSubmissionsOpen] = useState(false)
+  const [submissionsLoading, setSubmissionsLoading] = useState(false)
+  const [submissionsError, setSubmissionsError] = useState('')
+  const [submissionsForm, setSubmissionsForm] = useState(null)
+  const [submissions, setSubmissions] = useState([])
 
   const initialFormData = useMemo(
     () => ({
@@ -117,11 +138,11 @@ export default function RegistrationFormsPage() {
     for (const f of def.fields) {
       const id = String(f?.id || '').trim()
       if (!id) {
-        newErrors.definition = 'Chaque champ doit avoir un identifiant (id)'
+        newErrors.definition = "Erreur interne: un champ n'a pas d'identifiant. Essaie de supprimer/recréer ce champ."
         break
       }
       if (ids.has(id)) {
-        newErrors.definition = `Identifiant dupliqué: ${id}`
+        newErrors.definition = "Erreur interne: deux champs ont le même identifiant. Essaie de supprimer/recréer un champ."
         break
       }
       ids.add(id)
@@ -131,7 +152,7 @@ export default function RegistrationFormsPage() {
   }
 
   const mapItemToFormData = (item) => {
-    const startsAt = item?.starts_at ? String(item.starts_at).split('T')[0] : ''
+    const startsAt = item?.starts_at ? toDatetimeLocalInput(item.starts_at) : ''
     const capMax = item?.capacity_max === null || item?.capacity_max === undefined ? '' : String(item.capacity_max)
     return {
       titre: item?.titre || '',
@@ -273,11 +294,11 @@ export default function RegistrationFormsPage() {
       for (const f of def.fields) {
         const id = String(f?.id || '').trim()
         if (!id) {
-          errs.definition = 'Chaque champ doit avoir un identifiant (id)'
+          errs.definition = "Erreur interne: un champ n'a pas d'identifiant. Essaie de supprimer/recréer ce champ."
           break
         }
         if (ids.has(id)) {
-          errs.definition = `Identifiant dupliqué: ${id}`
+          errs.definition = "Erreur interne: deux champs ont le même identifiant. Essaie de supprimer/recréer un champ."
           break
         }
         ids.add(id)
@@ -361,13 +382,45 @@ export default function RegistrationFormsPage() {
   const openCreateFromTemplate = (template) => {
     setDrawerKind('form')
     openCreate()
+    const def = ensureDefinition(template?.definition)
+    const normalized = {
+      ...def,
+      fields: (def.fields || []).map((f, idx) => ({
+        ...f,
+        id: `champ${idx + 1}`,
+        visibleWhen: null
+      }))
+    }
     setFormData((prev) => ({
       ...prev,
       status: 'draft',
       is_public: false,
-      public_slug: '',
-      definition: ensureDefinition(template?.definition)
+      definition: normalized
     }))
+    setSelectedFieldId(null)
+    setPreviewEnabled(true)
+  }
+
+  const applyTemplateToDraft = (templateId) => {
+    const t = templates.find((x) => x.id === templateId)
+    if (!t) return
+
+    const def = ensureDefinition(t?.definition)
+    const normalized = {
+      ...def,
+      fields: (def.fields || []).map((f, idx) => ({
+        ...f,
+        id: `champ${idx + 1}`,
+        visibleWhen: null
+      }))
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      // Template content is for structure only; do not copy template title/description.
+      definition: normalized
+    }))
+
     setSelectedFieldId(null)
     setPreviewEnabled(true)
   }
@@ -401,6 +454,17 @@ export default function RegistrationFormsPage() {
   const fields = definition.fields
   const selectedField = fields.find((f) => f.id === selectedFieldId) || null
 
+  // Creation mode for forms: IDs are auto-managed and id/type are locked.
+  const isCreatingForm = !activeIsTemplate && !editingItem
+
+  const normalizeFieldsForCreateForm = (rawFields) => {
+    return (rawFields || []).map((f, idx) => ({
+      ...f,
+      id: `champ${idx + 1}`,
+      visibleWhen: null
+    }))
+  }
+
   const setDefinition = (updater) => {
     activeSetFormData((prev) => {
       const nextDef = updater(ensureDefinition(prev.definition))
@@ -411,12 +475,17 @@ export default function RegistrationFormsPage() {
   const addField = (type) => {
     setDefinition((def) => {
       const next = { ...def, fields: [...def.fields] }
-      const baseId = slugify(`champ-${def.fields.length + 1}`) || `field-${def.fields.length + 1}`
+      const baseId = isCreatingForm
+        ? `champ${def.fields.length + 1}`
+        : (slugify(`champ-${def.fields.length + 1}`) || `field-${def.fields.length + 1}`)
+
       let id = baseId
-      let n = 2
-      const ids = new Set(next.fields.map((f) => f.id))
-      while (ids.has(id)) {
-        id = `${baseId}-${n++}`
+      if (!isCreatingForm) {
+        let n = 2
+        const ids = new Set(next.fields.map((f) => f.id))
+        while (ids.has(id)) {
+          id = `${baseId}-${n++}`
+        }
       }
       next.fields.push({
         id,
@@ -427,6 +496,12 @@ export default function RegistrationFormsPage() {
         options: type === 'select' ? ['Option 1', 'Option 2'] : undefined,
         visibleWhen: null
       })
+
+      if (isCreatingForm) {
+        next.fields = normalizeFieldsForCreateForm(next.fields)
+        id = `champ${next.fields.length}`
+      }
+
       setSelectedFieldId(id)
       return next
     })
@@ -447,6 +522,12 @@ export default function RegistrationFormsPage() {
       if (swap < 0 || swap >= def.fields.length) return def
       const next = [...def.fields]
       ;[next[idx], next[swap]] = [next[swap], next[idx]]
+
+      if (isCreatingForm) {
+        setSelectedFieldId(`champ${swap + 1}`)
+        return { ...def, fields: normalizeFieldsForCreateForm(next) }
+      }
+
       return { ...def, fields: next }
     })
   }
@@ -464,6 +545,12 @@ export default function RegistrationFormsPage() {
       const idx = def.fields.findIndex((f) => f.id === field.id)
       const next = [...def.fields]
       next.splice(idx + 1, 0, copy)
+
+      if (isCreatingForm) {
+        setSelectedFieldId(`champ${idx + 2}`)
+        return { ...def, fields: normalizeFieldsForCreateForm(next) }
+      }
+
       setSelectedFieldId(id)
       return { ...def, fields: next }
     })
@@ -471,35 +558,20 @@ export default function RegistrationFormsPage() {
 
   const deleteField = (fieldId) => {
     setDefinition((def) => {
+      const idx = def.fields.findIndex((f) => f.id === fieldId)
       const next = def.fields.filter((f) => f.id !== fieldId)
-      const selectedStillExists = next.some((f) => f.id === selectedFieldId)
-      if (!selectedStillExists) setSelectedFieldId(next[0]?.id || null)
-      // also remove conditions pointing to deleted field
-      const cleaned = next.map((f) => {
-        if (!f.visibleWhen) return f
-        return f.visibleWhen?.fieldId === fieldId ? { ...f, visibleWhen: null } : f
-      })
-      return { ...def, fields: cleaned }
+
+      const normalized = isCreatingForm ? normalizeFieldsForCreateForm(next) : next
+
+      const selectedStillExists = normalized.some((f) => f.id === selectedFieldId)
+      if (!selectedStillExists) {
+        const pick = Math.min(Math.max(idx, 0), normalized.length - 1)
+        setSelectedFieldId(normalized[pick]?.id || null)
+      }
+
+      return { ...def, fields: normalized }
     })
   }
-
-  const evaluateVisible = (field, answers) => {
-    const rule = field?.visibleWhen
-    if (!rule || !rule.fieldId) return true
-    const left = answers?.[rule.fieldId]
-    const right = rule.value
-    return String(left ?? '') === String(right ?? '')
-  }
-
-  const previewAnswers = useMemo(() => {
-    // Basic default answers for preview: empty string / false
-    const out = {}
-    for (const f of fields) {
-      if (f.type === 'checkbox') out[f.id] = false
-      else out[f.id] = ''
-    }
-    return out
-  }, [fields])
 
   const citySlug = String(city?.slug || '').trim()
   const isTemplate = activeIsTemplate
@@ -518,11 +590,48 @@ export default function RegistrationFormsPage() {
     try {
       if (!text) return
       await navigator.clipboard.writeText(text)
+      setLastCopiedText(text)
       setCopiedLink(true)
       window.setTimeout(() => setCopiedLink(false), 1200)
     } catch {
       // ignore
     }
+  }
+
+  const openSubmissions = async (item) => {
+    try {
+      setSubmissionsForm(item)
+      setSubmissionsOpen(true)
+      setSubmissionsError('')
+      setSubmissions([])
+      setSubmissionsLoading(true)
+      const res = await registrationFormsAPI.getSubmissions(item.id)
+      setSubmissions(Array.isArray(res?.data) ? res.data : [])
+    } catch (e) {
+      setSubmissionsError(e?.response?.data?.error || 'Erreur lors du chargement des soumissions')
+    } finally {
+      setSubmissionsLoading(false)
+    }
+  }
+
+  const getPublicLinkForItem = (item) => {
+    if (!item?.is_public) return ''
+    const slug = String(item?.public_slug || '').trim()
+    if (!citySlug || !slug) return ''
+    const base = window?.location?.origin || ''
+    return `${base}/${encodeURIComponent(citySlug)}/${encodeURIComponent(slug)}`
+  }
+
+  const renderSubmissionSummary = (row) => {
+    const data = row?.data && typeof row.data === 'object' ? row.data : null
+    if (!data) return '—'
+    const entries = Object.entries(data)
+    if (entries.length === 0) return '—'
+    const top = entries
+      .slice(0, 4)
+      .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+      .join(' • ')
+    return entries.length > 4 ? `${top} • …` : top
   }
 
   return (
@@ -536,33 +645,6 @@ export default function RegistrationFormsPage() {
           <p>Créez des formulaires personnalisables (JSON) pour l’app mobile.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {activeTab === 'forms' && templates.length > 0 && (
-            <div className="registration-templates-quick">
-              <select
-                className="registration-templates-select"
-                value={selectedTemplateId}
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
-              >
-                <option value="">Créer depuis un template…</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.titre || 'Template sans titre'}
-                  </option>
-                ))}
-              </select>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!selectedTemplateId}
-                onClick={() => {
-                  const t = templates.find((x) => x.id === selectedTemplateId)
-                  if (t) openCreateFromTemplate(t)
-                }}
-              >
-                Utiliser
-              </Button>
-            </div>
-          )}
           <Button
             onClick={activeTab === 'templates' ? openCreateTemplate : openCreateForm}
             icon={<Plus size={16} />}
@@ -637,7 +719,73 @@ export default function RegistrationFormsPage() {
           const pub = item?.is_public ? 'Public: oui' : 'Public: non'
           return `${slug} • ${pub}${desc ? `\n${desc}${desc.length > 80 ? '…' : ''}` : ''}`
         }}
+        renderActions={(item) => {
+          if (activeTab === 'templates') return null
+          const link = getPublicLinkForItem(item)
+          return (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                icon={<Users size={16} />}
+                onClick={() => openSubmissions(item)}
+              >
+                Soumissions
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                icon={<Link2 size={16} />}
+                disabled={!link}
+                onClick={() => copyText(link)}
+              >
+                {copiedLink && lastCopiedText === link ? 'Copié' : 'Copier le lien'}
+              </Button>
+            </>
+          )
+        }}
       />
+
+      <Drawer
+        isOpen={submissionsOpen}
+        onClose={() => {
+          setSubmissionsOpen(false)
+          setSubmissionsForm(null)
+          setSubmissions([])
+          setSubmissionsError('')
+        }}
+        title={submissionsForm?.titre ? `Soumissions — ${submissionsForm.titre}` : 'Soumissions'}
+        width={980}
+      >
+        {submissionsError && <div className="page-error">{submissionsError}</div>}
+        {submissionsLoading ? (
+          <div className="builder-empty">Chargement…</div>
+        ) : submissions.length === 0 ? (
+          <div className="builder-empty">Aucune soumission pour le moment.</div>
+        ) : (
+          <div className="submissions-list">
+            {submissions.map((s) => (
+              <div key={s.id} className="submission-card">
+                <div className="submission-top">
+                  <div>
+                    <div className="submission-title">
+                      {s?.users?.email ? s.users.email : 'Utilisateur inconnu'}
+                    </div>
+                    <div className="submission-meta">
+                      {s?.created_at ? new Date(s.created_at).toLocaleString() : '—'}
+                      {typeof s?.persons_count === 'number' ? ` • personnes: ${s.persons_count}` : ''}
+                    </div>
+                  </div>
+                  <Button type="button" variant="secondary" icon={<Copy size={16} />} onClick={() => copyText(JSON.stringify(s.data || {}, null, 2))}>
+                    Copier données
+                  </Button>
+                </div>
+                <div className="submission-body">{renderSubmissionSummary(s)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Drawer>
 
       <Drawer
         isOpen={activeDrawerOpen}
@@ -746,15 +894,17 @@ export default function RegistrationFormsPage() {
                     error={activeErrors.public_slug}
                   />
                   <div className="form-group">
-                    <label className="input-label">Public</label>
-                    <label style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 10 }}>
-                      <input
-                        type="checkbox"
-                        checked={!!activeFormData.is_public}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, is_public: e.target.checked }))}
-                      />
-                      Visible via lien (slug)
-                    </label>
+                    <div className="ds-inline-toggle">
+                      <span className="form-label">Public</span>
+                      <label className="ds-checkbox-row" style={{ marginTop: 0 }}>
+                        <input
+                          type="checkbox"
+                          checked={!!activeFormData.is_public}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, is_public: e.target.checked }))}
+                        />
+                        Visible via lien (slug)
+                      </label>
+                    </div>
 
                     {!editingItem ? (
                       <div className="builder-help">Slug généré automatiquement à partir du titre.</div>
@@ -798,9 +948,9 @@ export default function RegistrationFormsPage() {
             {!isTemplate && (
               <div className="form-row">
                 <Input
-                  label="Ouverture (starts_at)"
+                  label="Date de début"
                   name="starts_at"
-                  type="date"
+                  type="datetime-local"
                   value={activeFormData.starts_at}
                   onChange={activeHandleInputChange}
                 />
@@ -824,7 +974,34 @@ export default function RegistrationFormsPage() {
           </div>
 
           <div className="form-section">
-            <div className="form-section-title">Builder du formulaire (JSON réutilisable en React Native)</div>
+            <div className="form-section-title">Formulaire personnalisé</div>
+
+            {!isTemplate && !activeEditingItem && templates.length > 0 && (
+              <div className="form-row" style={{ marginTop: 10 }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Template</label>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                      className="registration-templates-select"
+                      value={selectedTemplateId}
+                      onChange={(e) => {
+                        const next = e.target.value
+                        setSelectedTemplateId(next)
+                        if (next) applyTemplateToDraft(next)
+                      }}
+                    >
+                      <option value="">Choisir un template…</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.titre || 'Template sans titre'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="builder-help">Le template applique uniquement la structure (champs).</div>
+                </div>
+              </div>
+            )}
 
             {activeErrors.definition && <div className="page-error">{activeErrors.definition}</div>}
 
@@ -856,11 +1033,18 @@ export default function RegistrationFormsPage() {
                 ) : (
                   <div className="builder-fields">
                     {fields.map((f, idx) => (
-                      <button
+                      <div
                         key={f.id}
-                        type="button"
                         className={`builder-field-item ${selectedFieldId === f.id ? 'active' : ''}`}
                         onClick={() => setSelectedFieldId(f.id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            setSelectedFieldId(f.id)
+                          }
+                        }}
                       >
                         <div className="builder-field-top">
                           <div>
@@ -868,10 +1052,7 @@ export default function RegistrationFormsPage() {
                               {idx + 1}. {f.label || 'Sans libellé'}
                             </div>
                             <div className="builder-field-meta">
-                              <span>id: {f.id}</span>
-                              <span>type: {typeLabel(f.type)}</span>
                               {f.required ? <span>requis</span> : <span>optionnel</span>}
-                              {f.visibleWhen?.fieldId ? <span>condition</span> : null}
                             </div>
                           </div>
 
@@ -890,7 +1071,7 @@ export default function RegistrationFormsPage() {
                             </button>
                           </div>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -924,54 +1105,18 @@ export default function RegistrationFormsPage() {
                           />
                         </div>
 
-                        <Input
-                          label="Identifiant (id)"
-                          value={selectedField.id}
-                          onChange={(e) => {
-                            const nextId = slugify(e.target.value) || e.target.value
-                            // rename field id + update references
-                            setDefinition((def) => {
-                              const next = { ...def, fields: [...def.fields] }
-                              const idx = next.fields.findIndex((f) => f.id === selectedField.id)
-                              if (idx < 0) return def
-                              if (next.fields.some((f) => f.id === nextId)) return def
-                              next.fields[idx] = { ...next.fields[idx], id: nextId }
-                              next.fields = next.fields.map((f) => {
-                                if (!f.visibleWhen) return f
-                                return f.visibleWhen.fieldId === selectedField.id
-                                  ? { ...f, visibleWhen: { ...f.visibleWhen, fieldId: nextId } }
-                                  : f
-                              })
-                              setSelectedFieldId(nextId)
-                              return next
-                            })
-                          }}
-                          placeholder="ex: child-name"
-                        />
-
-                        <Input
-                          label="Type"
-                          value={selectedField.type}
-                          onChange={(e) => {
-                            const t = e.target.value
-                            updateField(selectedField.id, {
-                              type: t,
-                              options: t === 'select' ? (selectedField.options?.length ? selectedField.options : ['Option 1']) : undefined
-                            })
-                          }}
-                          placeholder="text / select / number ..."
-                        />
-
                         <div className="form-group">
-                          <label className="input-label">Requis</label>
-                          <label style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 10 }}>
-                            <input
-                              type="checkbox"
-                              checked={!!selectedField.required}
-                              onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
-                            />
-                            Champ obligatoire
-                          </label>
+                          <div className="ds-inline-toggle">
+                            <span className="form-label">Requis</span>
+                            <label className="ds-checkbox-row" style={{ marginTop: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={!!selectedField.required}
+                                onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
+                              />
+                              Champ obligatoire
+                            </label>
+                          </div>
                         </div>
 
                         <div className="full">
@@ -1000,38 +1145,7 @@ export default function RegistrationFormsPage() {
                           </div>
                         )}
 
-                        <div className="full">
-                          <div className="form-row">
-                            <Input
-                              label="Condition (afficher seulement si id=...)"
-                              value={selectedField.visibleWhen?.fieldId || ''}
-                              onChange={(e) => {
-                                const fieldId = e.target.value
-                                if (!fieldId) {
-                                  updateField(selectedField.id, { visibleWhen: null })
-                                  return
-                                }
-                                updateField(selectedField.id, {
-                                  visibleWhen: { fieldId, operator: 'equals', value: selectedField.visibleWhen?.value ?? '' }
-                                })
-                              }}
-                              placeholder="Ex: childName"
-                            />
-                            <Input
-                              label="Valeur attendue"
-                              value={selectedField.visibleWhen?.value ?? ''}
-                              onChange={(e) => {
-                                const rule = selectedField.visibleWhen
-                                if (!rule?.fieldId) return
-                                updateField(selectedField.id, { visibleWhen: { ...rule, value: e.target.value } })
-                              }}
-                              placeholder="Ex: oui"
-                            />
-                          </div>
-                          <div className="builder-help">
-                            Règle simple: le champ est visible si la valeur du champ référencé est égale.
-                          </div>
-                        </div>
+
                       </div>
                     </>
                   )}
@@ -1039,21 +1153,19 @@ export default function RegistrationFormsPage() {
 
                 {previewEnabled && (
                   <div className="preview">
-                    <h3 className="preview-title">Aperçu (logique de conditions)</h3>
+                    <h3 className="preview-title">Aperçu</h3>
                     {fields.length === 0 ? (
                       <div className="builder-empty">Ajoute des champs pour voir l’aperçu.</div>
                     ) : (
                       <>
                         {fields.map((f) => {
-                          const isVisible = evaluateVisible(f, previewAnswers)
-                          if (!isVisible) return null
                           return (
                             <div key={f.id} className="preview-field">
                               <div className="preview-field-label">
-                                {f.label || f.id} {f.required ? '*' : ''}
+                                {f.label || 'Sans libellé'} {f.required ? '*' : ''}
                               </div>
                               <div style={{ color: 'var(--color-gray-600)', fontSize: 13 }}>
-                                type: {typeLabel(f.type)} {f.type === 'select' ? `(${(f.options || []).join(' / ')})` : ''}
+                                {f.type === 'select' ? `Options: ${(f.options || []).join(' / ')}` : ''}
                               </div>
                             </div>
                           )
@@ -1065,9 +1177,7 @@ export default function RegistrationFormsPage() {
               </div>
             </div>
 
-            <div className="builder-help" style={{ marginTop: 10 }}>
-              Structure JSON sauvegardée: <b>{'{ version: 1, fields: [...] }'}</b>. Chaque champ peut avoir <b>visibleWhen</b> pour gérer une condition simple.
-            </div>
+
           </div>
 
           <div className="form-actions">

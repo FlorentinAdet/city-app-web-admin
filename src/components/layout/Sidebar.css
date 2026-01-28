@@ -27,11 +27,31 @@
   border-bottom: 1px solid #E0E0E0;
 }
 
+.sidebar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sidebar-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  flex: 0 0 auto;
+}
+
 .sidebar-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--color-primary);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-close {
