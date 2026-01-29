@@ -169,18 +169,29 @@ export const authAPI = {
 
 // Uploads API
 export const uploadsAPI = {
-  uploadImage: (file) => {
+  uploadImage: (file, options = {}) => {
     const form = new FormData()
     form.append('file', file)
     // IMPORTANT: do not force Content-Type here.
     // The browser must set the multipart boundary, otherwise multer won't receive the file.
-    return api.post('/uploads/image', form)
+    const params = {}
+    if (options?.kind) params.kind = options.kind
+    return api.post('/uploads/image', form, { params })
   },
   uploadLogo: (file) => {
     const form = new FormData()
     form.append('file', file)
     return api.post('/uploads/logo', form)
   }
+}
+
+// Annoucements API
+export const annoucementsAPI = {
+  getAll: () => api.get('/annoucements'),
+  getById: (id) => api.get(`/annoucements/${id}`),
+  create: (data) => api.post('/annoucements', data),
+  update: (id, data) => api.put(`/annoucements/${id}`, data),
+  delete: (id) => api.delete(`/annoucements/${id}`)
 }
 
 // Admin API (superadmin only)

@@ -222,7 +222,7 @@ export default function EventsPage() {
               handleInputChange({ target: { name: 'image', value: url } })
             }}
             uploadFn={async (file) => {
-              const res = await uploadsAPI.uploadImage(file)
+              const res = await uploadsAPI.uploadImage(file, { kind: 'event' })
               return res.data
             }}
           />

@@ -13,6 +13,7 @@ import LoginPage from './pages/LoginPage'
 import AdminPanelPage from './pages/AdminPanelPage'
 import CityInfoPage from './pages/CityInfoPage'
 import PollsPage from './pages/PollsPage'
+import AnnoucementsPage from './pages/AnnoucementsPage'
 import PublicRegistrationFormPage from './pages/PublicRegistrationFormPage'
 import { useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
@@ -76,9 +77,11 @@ function AdminApp() {
       case 'users':
         return <UsersPage />
       case 'city-info':
+        return <CityInfoPage />
+      case 'annoucements':
+        return <AnnoucementsPage />
       case 'polls':
         return <PollsPage />
-        return <CityInfoPage />
       default:
         return <HomePage onNavigate={handlePageChange} />
     }
