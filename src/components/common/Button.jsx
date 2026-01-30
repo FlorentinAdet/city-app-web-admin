@@ -7,13 +7,15 @@ export default function Button({
   disabled = false,
   type = 'button',
   icon,
+  iconOnly = false,
   onClick,
+  className,
   ...props
 }) {
   return (
     <button
       type={type}
-      className={`btn btn-${variant} btn-${size}`}
+      className={`btn btn-${variant} btn-${size}${iconOnly ? ' btn-icon-only' : ''}${className ? ` ${className}` : ''}`}
       disabled={disabled}
       onClick={onClick}
       {...props}

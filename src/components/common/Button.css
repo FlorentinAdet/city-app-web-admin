@@ -40,6 +40,28 @@
   height: 1.1em;
 }
 
+/* Icon-only (no label) */
+.btn-icon-only {
+  gap: 0;
+}
+
+.btn-icon-only.btn-sm {
+  padding: 8px;
+}
+
+.btn-icon-only.btn-md {
+  padding: 10px;
+}
+
+.btn-icon-only.btn-lg {
+  padding: 12px;
+}
+
+.btn-icon-only .btn-icon svg {
+  width: 1.15em;
+  height: 1.15em;
+}
+
 /* Sizes */
 .btn-sm {
   padding: 8px 12px;

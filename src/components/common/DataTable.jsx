@@ -2,7 +2,7 @@ import Button from './Button'
 import './DataTable.css'
 import { Inbox, Pencil, Trash2 } from 'lucide-react'
 
-export default function DataTable({ columns, data, onEdit, onDelete, loading }) {
+export default function DataTable({ columns, data, onEdit, onDelete, loading, renderActions }) {
   if (loading) {
     return (
       <div className="table-loading">
@@ -43,20 +43,26 @@ export default function DataTable({ columns, data, onEdit, onDelete, loading }) 
                 </td>
               ))}
               <td className="table-actions">
-                <Button 
-                  variant="warning" 
-                  onClick={() => onEdit(row)}
-                  icon={<Pencil size={16} />}
-                >
-                  Modifier
-                </Button>
-                <Button 
-                  variant="danger" 
-                  onClick={() => onDelete(row)}
-                  icon={<Trash2 size={16} />}
-                >
-                  Supprimer
-                </Button>
+                {typeof renderActions === 'function' ? (
+                  renderActions(row)
+                ) : (
+                  <>
+                    <Button 
+                      variant="warning" 
+                      onClick={() => onEdit(row)}
+                      icon={<Pencil size={16} />}
+                    >
+                      Modifier
+                    </Button>
+                    <Button 
+                      variant="danger" 
+                      onClick={() => onDelete(row)}
+                      icon={<Trash2 size={16} />}
+                    >
+                      Supprimer
+                    </Button>
+                  </>
+                )}
               </td>
             </tr>
           ))}

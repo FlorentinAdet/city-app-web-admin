@@ -50,7 +50,7 @@ export default function EntityCardGrid({
           {renderCover && <div className="entity-card-cover">{renderCover(item)}</div>}
           <h3 className="entity-card-title">{renderTitle?.(item)}</h3>
           {renderMeta && <div className="entity-card-meta">{renderMeta(item)}</div>}
-          {renderBody && <p className="entity-card-content">{renderBody(item)}</p>}
+          {renderBody && <div className="entity-card-content">{renderBody(item)}</div>}
           {renderActions && (
             <div className="entity-card-actions" onClick={(e) => e.stopPropagation()}>
               {renderActions(item)}
