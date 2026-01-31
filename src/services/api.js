@@ -112,6 +112,15 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`)
 }
 
+// Admin users (users_admin) API (city-scoped; admin-only)
+export const usersAdminAPI = {
+  getAll: () => api.get('/admin/users-admin'),
+  getById: (id) => api.get(`/admin/users-admin/${id}`),
+  create: (data) => api.post('/admin/users-admin', data),
+  update: (id, data) => api.put(`/admin/users-admin/${id}`, data),
+  delete: (id) => api.delete(`/admin/users-admin/${id}`)
+}
+
 // Registration Forms API (admin)
 export const registrationFormsAPI = {
   getAll: () => api.get('/registration-forms'),

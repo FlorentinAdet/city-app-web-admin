@@ -9,8 +9,13 @@ import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
 import './PageStyles.css'
 import { BarChart3, Plus, Save, Trash2 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { canEditPage } from '../utils/adminAccess'
 
 export default function PollsPage() {
+  const { admin } = useAuth()
+  const canEdit = canEditPage('polls', admin)
+
   const [query, setQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -210,9 +215,11 @@ export default function PollsPage() {
           </h1>
           <p>Créez et gérez les sondages de votre ville.</p>
         </div>
-        <Button onClick={openCreate} variant="primary" icon={<Plus size={16} />}>
-          Nouveau sondage
-        </Button>
+        {canEdit ? (
+          <Button onClick={openCreate} variant="primary" icon={<Plus size={16} />}>
+            Nouveau sondage
+          </Button>
+        ) : null}
       </div>
 
       <EntityListToolbar
@@ -262,9 +269,11 @@ export default function PollsPage() {
             <Button type="button" variant="secondary" onClick={() => openEdit(item)}>
               Ouvrir
             </Button>
-            <Button type="button" variant="danger" onClick={() => handleDelete(item)} icon={<Trash2 size={16} />}>
-              Supprimer
-            </Button>
+            {canEdit ? (
+              <Button type="button" variant="danger" onClick={() => handleDelete(item)} icon={<Trash2 size={16} />}>
+                Supprimer
+              </Button>
+            ) : null}
           </>
         )}
       />
@@ -276,6 +285,10 @@ export default function PollsPage() {
         width={620}
       >
         <form onSubmit={(e) => {
+          if (!canEdit) {
+            e.preventDefault()
+            return
+          }
           // Ensure we send the exact JSON structure we want: array of {id,label}.
           // Strip empty lines.
           const choices = normalizeOptions(formData.options)
@@ -292,6 +305,7 @@ export default function PollsPage() {
             error={errors.title}
             required
             placeholder="Quel est votre projet préféré pour 2026 ?"
+            disabled={!canEdit}
           />
 
           <Input
@@ -302,6 +316,7 @@ export default function PollsPage() {
             value={formData.description}
             onChange={handleInputChange}
             placeholder="Donnez plus de détails sur ce sondage..."
+            disabled={!canEdit}
           />
 
           <div className="form-row">
@@ -312,6 +327,7 @@ export default function PollsPage() {
                 name="type"
                 value={formData.type}
                 onChange={handleInputChange}
+                disabled={!canEdit}
               >
                 <option value="single_choice">Choix unique</option>
                 <option value="multiple_choice">Choix multiple</option>
@@ -325,6 +341,7 @@ export default function PollsPage() {
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
+                disabled={!canEdit}
               >
                 <option value="Brouillon">Brouillon</option>
                 <option value="Publi_">Publié</option>
@@ -340,6 +357,7 @@ export default function PollsPage() {
               type="datetime-local"
               value={formData.starts_at}
               onChange={handleInputChange}
+              disabled={!canEdit}
             />
 
             <Input
@@ -348,6 +366,7 @@ export default function PollsPage() {
               type="datetime-local"
               value={formData.end_at}
               onChange={handleInputChange}
+              disabled={!canEdit}
             />
           </div>
 
@@ -361,13 +380,14 @@ export default function PollsPage() {
                     value={opt.label}
                     onChange={(e) => updateOptionLabel(opt.id, e.target.value)}
                     placeholder="Ex: Rénover la place centrale"
+                    disabled={!canEdit}
                   />
                 </div>
                 <Button
                   type="button"
                   variant="danger"
                   onClick={() => removeOption(opt.id)}
-                  disabled={normalizeOptions(formData.options).length <= 2}
+                  disabled={!canEdit || normalizeOptions(formData.options).length <= 2}
                 >
                   Retirer
                 </Button>
@@ -376,13 +396,13 @@ export default function PollsPage() {
 
             {errors.options && <div className="page-error">{errors.options}</div>}
 
-            <Button type="button" variant="secondary" icon={<Plus size={16} />} onClick={addOption}>
+            <Button type="button" variant="secondary" icon={<Plus size={16} />} onClick={addOption} disabled={!canEdit}>
               Ajouter un choix
             </Button>
           </div>
 
           <div className="form-actions">
-            {editingItem && (
+            {canEdit && editingItem && (
               <Button type="button" variant="danger" onClick={() => handleDelete(editingItem)} icon={<Trash2 size={16} />}>
                 Supprimer
               </Button>
@@ -390,9 +410,11 @@ export default function PollsPage() {
             <Button type="button" variant="secondary" onClick={closeDrawer}>
               Annuler
             </Button>
-            <Button type="submit" variant="success" icon={<Save size={16} />}>
-              {editingItem ? 'Enregistrer' : 'Créer'}
-            </Button>
+            {canEdit ? (
+              <Button type="submit" variant="success" icon={<Save size={16} />}>
+                {editingItem ? 'Enregistrer' : 'Créer'}
+              </Button>
+            ) : null}
           </div>
         </form>
       </Drawer>

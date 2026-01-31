@@ -5,6 +5,7 @@ import ImageUploadField from '../components/common/ImageUploadField'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { cityProfileAPI, citySettingsAPI, uploadsAPI } from '../services/api'
+import { canEditPage } from '../utils/adminAccess'
 import './PageStyles.css'
 import './CityInfoPage.css'
 import { Info, Plus, Save, Trash2 } from 'lucide-react'
@@ -50,7 +51,10 @@ const safeObj = (value) => (value && typeof value === 'object' && !Array.isArray
 
 export default function CityInfoPage() {
   const toast = useToast()
-  const { updateCity } = useAuth()
+  const { updateCity, admin } = useAuth()
+  const canEdit = canEditPage('city-info', admin)
+  const readOnly = !canEdit
+
   const [activeTab, setActiveTab] = useState('form')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -169,6 +173,7 @@ export default function CityInfoPage() {
   }
 
   const save = async () => {
+    if (readOnly) return
     setSaving(true)
     try {
       let payload = mergedSettings
@@ -190,11 +195,13 @@ export default function CityInfoPage() {
   }
 
   const resetDefaults = () => {
+    if (readOnly) return
     setSettings(defaultSettings())
     toast.success('Valeurs par défaut appliquées')
   }
 
   const updateLogo = async (nextUrl) => {
+    if (readOnly) return
     setLogoSaving(true)
     try {
       setLogoUrl(nextUrl || '')
@@ -225,10 +232,10 @@ export default function CityInfoPage() {
         </div>
 
         <div className="city-info-actions">
-          <Button variant="secondary" onClick={resetDefaults} disabled={saving}>
+          <Button variant="secondary" onClick={resetDefaults} disabled={saving || readOnly}>
             Réinitialiser
           </Button>
-          <Button variant="primary" onClick={save} disabled={saving} icon={<Save size={16} />}>
+          <Button variant="primary" onClick={save} disabled={saving || readOnly} icon={<Save size={16} />}>
             {saving ? 'Enregistrement…' : 'Enregistrer'}
           </Button>
         </div>
@@ -253,6 +260,7 @@ export default function CityInfoPage() {
               value={jsonText}
               onChange={(e) => setJsonText(e.target.value)}
               spellCheck={false}
+              disabled={saving || readOnly}
             />
           </div>
           <div className="city-info-hint">
@@ -260,14 +268,15 @@ export default function CityInfoPage() {
           </div>
         </div>
       ) : (
-        <>
+        <fieldset disabled={saving || readOnly} style={{ border: 0, padding: 0, margin: 0 }}>
+          <>
           <div className="form-section">
             <div className="form-section-title">Logo</div>
             <ImageUploadField
               label="Logo de la ville"
               helpText="JPEG, PNG ou WebP (max 5MB). Redimensionné automatiquement en 512×512 max."
               value={logoUrl}
-              disabled={saving || logoSaving}
+              disabled={saving || logoSaving || readOnly}
               uploadFn={async (file) => {
                 const res = await uploadsAPI.uploadLogo(file)
                 return res.data
@@ -430,7 +439,8 @@ export default function CityInfoPage() {
               onChange={(e) => updateSetting(['waste_collection', 'recycling'], e.target.value)}
             />
           </div>
-        </>
+          </>
+        </fieldset>
       )}
     </div>
   )

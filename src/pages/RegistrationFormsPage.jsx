@@ -8,6 +8,7 @@ import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
 import { registrationFormsAPI, registrationFormTemplatesAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { canEditPage } from '../utils/adminAccess'
 import './PageStyles.css'
 import './RegistrationFormsPage.css'
 import {
@@ -79,6 +80,8 @@ const typeLabel = (type) => {
 
 export default function RegistrationFormsPage() {
   const { city, admin } = useAuth()
+  const canEdit = canEditPage('registration', admin)
+  const readOnly = !canEdit
 
   const [activeTab, setActiveTab] = useState('forms') // forms | templates
   const [query, setQuery] = useState('')
@@ -645,12 +648,14 @@ export default function RegistrationFormsPage() {
           <p>Créez des formulaires personnalisables (JSON) pour l’app mobile.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <Button
-            onClick={activeTab === 'templates' ? openCreateTemplate : openCreateForm}
-            icon={<Plus size={16} />}
-          >
-            {activeTab === 'templates' ? 'Nouveau template' : 'Nouveau formulaire'}
-          </Button>
+          {canEdit ? (
+            <Button
+              onClick={activeTab === 'templates' ? openCreateTemplate : openCreateForm}
+              icon={<Plus size={16} />}
+            >
+              {activeTab === 'templates' ? 'Nouveau template' : 'Nouveau formulaire'}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -806,11 +811,16 @@ export default function RegistrationFormsPage() {
       >
         <form
           onSubmit={(e) => {
+            if (readOnly) {
+              e.preventDefault()
+              return
+            }
             // Ensure definition is normalized before submit
             activeSetFormData((prev) => ({ ...prev, definition: ensureDefinition(prev.definition) }))
             return activeHandleSubmit(e)
           }}
         >
+          <fieldset disabled={readOnly} style={{ border: 0, padding: 0, margin: 0 }}>
           <div className="form-section">
             <div className="form-section-title">Configuration</div>
 
@@ -1180,8 +1190,10 @@ export default function RegistrationFormsPage() {
 
           </div>
 
+          </fieldset>
+
           <div className="form-actions">
-            {activeEditingItem && (
+            {canEdit && activeEditingItem && (
               <Button
                 type="button"
                 variant="danger"
@@ -1194,9 +1206,11 @@ export default function RegistrationFormsPage() {
             <Button type="button" variant="secondary" onClick={activeCloseDrawer}>
               Fermer
             </Button>
-            <Button type="submit" variant="success" icon={<Save size={16} />}>
-              {activeEditingItem ? 'Enregistrer' : 'Créer'}
-            </Button>
+            {canEdit ? (
+              <Button type="submit" variant="success" icon={<Save size={16} />}>
+                {activeEditingItem ? 'Enregistrer' : 'Créer'}
+              </Button>
+            ) : null}
           </div>
         </form>
       </Drawer>

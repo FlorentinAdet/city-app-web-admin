@@ -8,10 +8,15 @@ import Button from '../components/common/Button'
 import { newsAPI, uploadsAPI } from '../services/api'
 import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
+import { useAuth } from '../context/AuthContext'
+import { canEditPage } from '../utils/adminAccess'
 import './PageStyles.css'
 import { Calendar, Newspaper, Plus, Save, Trash2 } from 'lucide-react'
 
 export default function NewsPage() {
+  const { admin } = useAuth()
+  const canEdit = canEditPage('news', admin)
+
   const [query, setQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -99,9 +104,11 @@ export default function NewsPage() {
           </h1>
           <p>Gérez toutes les actualités de votre application</p>
         </div>
-        <Button onClick={openCreate} icon={<Plus size={16} />}>
-          Nouvelle News
-        </Button>
+        {canEdit ? (
+          <Button onClick={openCreate} icon={<Plus size={16} />}>
+            Nouvelle News
+          </Button>
+        ) : null}
       </div>
 
       <EntityListToolbar
@@ -152,7 +159,15 @@ export default function NewsPage() {
         title={editingItem ? 'Modifier rapidement' : 'Créer une news'}
         width={560}
       >
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            if (!canEdit) {
+              e.preventDefault()
+              return
+            }
+            return handleSubmit(e)
+          }}
+        >
           <Input
             label="Titre"
             name="title"
@@ -161,6 +176,7 @@ export default function NewsPage() {
             required
             error={errors.title}
             placeholder="Titre de la news"
+            disabled={!canEdit}
           />
 
           <Input
@@ -173,6 +189,7 @@ export default function NewsPage() {
             multiline
             rows={10}
             placeholder="Contenu de la news"
+            disabled={!canEdit}
           />
 
           <ImageUploadField
@@ -186,10 +203,11 @@ export default function NewsPage() {
               const res = await uploadsAPI.uploadImage(file, { kind: 'news' })
               return res.data
             }}
+            disabled={!canEdit}
           />
 
           <div className="form-actions">
-            {editingItem && (
+            {canEdit && editingItem && (
               <Button type="button" variant="danger" onClick={() => handleDelete(editingItem)} icon={<Trash2 size={16} />}>
                 Supprimer
               </Button>
@@ -197,9 +215,11 @@ export default function NewsPage() {
             <Button type="button" variant="secondary" onClick={closeDrawer}>
               Fermer
             </Button>
-            <Button type="submit" variant="success" icon={<Save size={16} />}>
-              {editingItem ? 'Enregistrer' : 'Créer'}
-            </Button>
+            {canEdit ? (
+              <Button type="submit" variant="success" icon={<Save size={16} />}>
+                {editingItem ? 'Enregistrer' : 'Créer'}
+              </Button>
+            ) : null}
           </div>
         </form>
       </Drawer>

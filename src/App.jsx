@@ -18,6 +18,7 @@ import PublicRegistrationFormPage from './pages/PublicRegistrationFormPage'
 import { useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import { ConfirmDialogProvider } from './context/ConfirmDialogContext'
+import { canViewPage } from './utils/adminAccess'
 
 function AppProviders({ children }) {
   return (
@@ -46,6 +47,13 @@ function AdminApp() {
       }
     }
   }, [handlePageChange])
+
+  useEffect(() => {
+    if (!admin) return
+    if (!canViewPage(currentPage, admin)) {
+      setCurrentPage('home')
+    }
+  }, [admin, currentPage])
 
   // Show login if not authenticated
   if (!token || !admin) {

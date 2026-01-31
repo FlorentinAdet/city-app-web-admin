@@ -8,10 +8,15 @@ import Button from '../components/common/Button'
 import { eventsAPI, uploadsAPI } from '../services/api'
 import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
+import { useAuth } from '../context/AuthContext'
+import { canEditPage } from '../utils/adminAccess'
 import './PageStyles.css'
 import { Calendar, MapPin, Plus, Save, Trash2 } from 'lucide-react'
 
 export default function EventsPage() {
+  const { admin } = useAuth()
+  const canEdit = canEditPage('events', admin)
+
   const [query, setQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -106,9 +111,11 @@ export default function EventsPage() {
           </h1>
           <p>Gérez tous les événements de votre application</p>
         </div>
-        <Button onClick={openCreate} icon={<Plus size={16} />}>
-          Nouvel Événement
-        </Button>
+        {canEdit ? (
+          <Button onClick={openCreate} icon={<Plus size={16} />}>
+            Nouvel Événement
+          </Button>
+        ) : null}
       </div>
 
       <EntityListToolbar
@@ -163,7 +170,15 @@ export default function EventsPage() {
         title={editingItem ? "Modifier rapidement" : 'Créer un événement'}
         width={560}
       >
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            if (!canEdit) {
+              e.preventDefault()
+              return
+            }
+            return handleSubmit(e)
+          }}
+        >
           <Input
             label="Titre"
             name="title"
@@ -172,6 +187,7 @@ export default function EventsPage() {
             required
             error={errors.title}
             placeholder="Titre de l'événement"
+            disabled={!canEdit}
           />
           
           <Input
@@ -181,6 +197,7 @@ export default function EventsPage() {
             onChange={handleInputChange}
             error={errors.lieu}
             placeholder="Lieu de l'événement"
+            disabled={!canEdit}
           />
           
           <Input
@@ -193,6 +210,7 @@ export default function EventsPage() {
             multiline
             rows={6}
             placeholder="Description de l'événement"
+            disabled={!canEdit}
           />
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -204,6 +222,7 @@ export default function EventsPage() {
               onChange={handleInputChange}
               required
               error={errors.start_date}
+              disabled={!canEdit}
             />
             
             <Input
@@ -212,6 +231,7 @@ export default function EventsPage() {
               type="date"
               value={formData.end_date}
               onChange={handleInputChange}
+              disabled={!canEdit}
             />
           </div>
 
@@ -225,10 +245,11 @@ export default function EventsPage() {
               const res = await uploadsAPI.uploadImage(file, { kind: 'event' })
               return res.data
             }}
+            disabled={!canEdit}
           />
           
           <div className="form-actions">
-            {editingItem && (
+            {canEdit && editingItem && (
               <Button type="button" variant="danger" onClick={() => handleDelete(editingItem)} icon={<Trash2 size={16} />}>
                 Supprimer
               </Button>
@@ -236,9 +257,11 @@ export default function EventsPage() {
             <Button type="button" variant="secondary" onClick={closeDrawer}>
               Fermer
             </Button>
-            <Button type="submit" variant="success" icon={<Save size={16} />}>
-              {editingItem ? 'Enregistrer' : 'Créer'}
-            </Button>
+            {canEdit ? (
+              <Button type="submit" variant="success" icon={<Save size={16} />}>
+                {editingItem ? 'Enregistrer' : 'Créer'}
+              </Button>
+            ) : null}
           </div>
         </form>
       </Drawer>

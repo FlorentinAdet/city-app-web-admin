@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI } from '../services/api'
+import { canViewPage } from '../utils/adminAccess'
 import './HomePage.css'
 import { Calendar, FileText, Home, Info, Newspaper, Shield, Users } from 'lucide-react'
 
@@ -35,13 +36,20 @@ export default function HomePage({ onNavigate }) {
     }
   }, [])
 
-  const quickLinks = [
-    { id: 'city-info', label: 'Infos ville', icon: Info },
-    { id: 'news', label: 'Actualités', icon: Newspaper },
-    { id: 'events', label: 'Événements', icon: Calendar },
-    { id: 'reports', label: 'Signalements', icon: FileText },
-    { id: 'users', label: 'Utilisateurs', icon: Users },
-  ]
+  const quickLinks = useMemo(
+    () => [
+      { id: 'city-info', label: 'Infos ville', icon: Info },
+      { id: 'news', label: 'Actualités', icon: Newspaper },
+      { id: 'events', label: 'Événements', icon: Calendar },
+      { id: 'reports', label: 'Signalements', icon: FileText },
+      { id: 'users', label: 'Utilisateurs', icon: Users },
+    ],
+    []
+  )
+
+  const visibleQuickLinks = useMemo(() => {
+    return quickLinks.filter((link) => canViewPage(link.id, admin))
+  }, [admin, quickLinks])
 
   return (
     <div className="home">
@@ -78,7 +86,7 @@ export default function HomePage({ onNavigate }) {
           </div>
 
           <div className="quick-grid">
-            {quickLinks.map((link) => {
+            {visibleQuickLinks.map((link) => {
               const Icon = link.icon
               return (
                 <button
@@ -93,7 +101,7 @@ export default function HomePage({ onNavigate }) {
               )
             })}
 
-            {admin?.role === 'superadmin' && (
+            {canViewPage('admin-panel', admin) && (
               <button
                 type="button"
                 className="quick-card"

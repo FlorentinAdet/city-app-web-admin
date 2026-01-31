@@ -1,12 +1,13 @@
 import './Sidebar.css'
 import { useAuth } from '../../context/AuthContext'
 import { AlertTriangle, BarChart3, Calendar, ClipboardList, Home, Info, LogOut, Megaphone, Newspaper, Shield, Users, X } from 'lucide-react'
+import { canViewPage } from '../../utils/adminAccess'
 
 export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cityName, logoUrl, role }) {
   const { logout, admin } = useAuth()
 
   const resolvedRole = role || admin?.role
-  const navItems = resolvedRole === 'superadmin'
+  const rawNavItems = resolvedRole === 'superadmin'
     ? [{ id: 'admin-panel', icon: Shield, label: 'Panel Superadmin' }]
     : [
         { id: 'home', icon: Home, label: 'Accueil' },
@@ -19,6 +20,8 @@ export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cit
         { id: 'reports', icon: AlertTriangle, label: 'Signalements' },
         { id: 'users', icon: Users, label: 'Utilisateurs' },
       ]
+
+  const navItems = rawNavItems.filter((item) => canViewPage(item.id, admin))
 
   const handleLogout = () => {
     logout()

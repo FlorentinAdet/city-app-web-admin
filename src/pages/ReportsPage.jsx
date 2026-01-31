@@ -11,10 +11,15 @@ import { filterAndSort } from '../utils/listFiltering'
 import './PageStyles.css'
 import './ReportsPage.css'
 import { useToast } from '../context/ToastContext'
+import { useAuth } from '../context/AuthContext'
+import { canEditPage } from '../utils/adminAccess'
 import { AlertTriangle, Calendar, Check, ChevronDown, MessageSquare, Trash2, User } from 'lucide-react'
 
 export default function ReportsPage() {
   const toast = useToast()
+  const { admin } = useAuth()
+  const canEdit = canEditPage('reports', admin)
+  const readOnly = !canEdit
 
   const [query, setQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
@@ -221,6 +226,7 @@ export default function ReportsPage() {
   }, [tagMenu])
 
   const openTagMenu = (e, config) => {
+    if (readOnly) return
     e.preventDefault()
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
@@ -239,6 +245,7 @@ export default function ReportsPage() {
   }
 
   const quickUpdate = async (rowId, payload, successMessage) => {
+    if (readOnly) return
     if (!rowId) return
     setSavingId(rowId)
     try {
@@ -255,6 +262,7 @@ export default function ReportsPage() {
   }
 
   const openCommentModal = (row) => {
+    if (readOnly) return
     setCommentTarget(row)
     setCommentDraft(String(row?.adminComment || ''))
     setCommentModalOpen(true)
@@ -267,6 +275,7 @@ export default function ReportsPage() {
   }
 
   const saveComment = async (rowId, comment) => {
+    if (readOnly) return
     await quickUpdate(
       rowId,
       {
@@ -280,6 +289,7 @@ export default function ReportsPage() {
   }
 
   const handleMenuSelect = async (nextValue) => {
+    if (readOnly) return
     if (!tagMenu?.rowId || !tagMenu?.kind) return
 
     const trimmed = String(nextValue || '').trim()
@@ -447,7 +457,7 @@ export default function ReportsPage() {
                 <button
                   type="button"
                   className="report-tag report-tag--status report-tag--btn"
-                  disabled={savingId === item?.id}
+                  disabled={readOnly || savingId === item?.id}
                   onClick={(e) =>
                     openTagMenu(e, {
                       kind: 'status',
@@ -465,7 +475,7 @@ export default function ReportsPage() {
                 <button
                   type="button"
                   className="report-tag report-tag--btn"
-                  disabled={savingId === item?.id}
+                  disabled={readOnly || savingId === item?.id}
                   onClick={(e) =>
                     openTagMenu(e, {
                       kind: 'categorie',
@@ -483,7 +493,7 @@ export default function ReportsPage() {
                 <button
                   type="button"
                   className={`report-tag report-tag--btn ${urgenceClass(item?.urgence)}`}
-                  disabled={savingId === item?.id}
+                  disabled={readOnly || savingId === item?.id}
                   onClick={(e) =>
                     openTagMenu(e, {
                       kind: 'urgence',
@@ -519,17 +529,20 @@ export default function ReportsPage() {
               onClick={() => openCommentModal(item)}
               aria-label="Commenter"
               title="Commenter"
-              disabled={savingId === item?.id}
+              disabled={readOnly || savingId === item?.id}
             />
             <Button
               variant="danger"
               size="sm"
               iconOnly
               icon={<Trash2 size={16} />}
-              onClick={() => handleDelete(item)}
+              onClick={() => {
+                if (readOnly) return
+                handleDelete(item)
+              }}
               aria-label="Supprimer"
               title="Supprimer"
-              disabled={savingId === item?.id}
+              disabled={readOnly || savingId === item?.id}
             />
           </div>
         )}
@@ -551,7 +564,7 @@ export default function ReportsPage() {
                   <button
                     type="button"
                     className="report-tag report-tag--status report-tag--btn"
-                    disabled={savingId === editingItem?.id}
+                    disabled={readOnly || savingId === editingItem?.id}
                     onClick={(e) =>
                       openTagMenu(e, {
                         kind: 'status',
@@ -569,7 +582,7 @@ export default function ReportsPage() {
                   <button
                     type="button"
                     className="report-tag report-tag--btn"
-                    disabled={savingId === editingItem?.id}
+                    disabled={readOnly || savingId === editingItem?.id}
                     onClick={(e) =>
                       openTagMenu(e, {
                         kind: 'categorie',
@@ -587,7 +600,7 @@ export default function ReportsPage() {
                   <button
                     type="button"
                     className={`report-tag report-tag--btn ${urgenceClass(formData.urgence)}`}
-                    disabled={savingId === editingItem?.id}
+                    disabled={readOnly || savingId === editingItem?.id}
                     onClick={(e) =>
                       openTagMenu(e, {
                         kind: 'urgence',
@@ -639,6 +652,7 @@ export default function ReportsPage() {
                 name="admin_comment"
                 value={formData.admin_comment}
                 onChange={(e) => setFormData((prev) => ({ ...prev, admin_comment: e.target.value }))}
+                disabled={readOnly}
                 multiline
                 rows={5}
                 placeholder="Écrivez un commentaire visible côté utilisateur"
@@ -653,7 +667,7 @@ export default function ReportsPage() {
                   onClick={() => openCommentModal(editingItem)}
                   aria-label="Ouvrir en grand"
                   title="Ouvrir en grand"
-                  disabled={savingId === editingItem?.id}
+                  disabled={readOnly || savingId === editingItem?.id}
                 />
                 <Button
                   variant="primary"
@@ -661,7 +675,7 @@ export default function ReportsPage() {
                     if (!editingItem?.id) return
                     await saveComment(editingItem.id, formData.admin_comment)
                   }}
-                  disabled={!editingItem?.id || savingId === editingItem?.id}
+                  disabled={readOnly || !editingItem?.id || savingId === editingItem?.id}
                 >
                   Enregistrer
                 </Button>
@@ -691,7 +705,7 @@ export default function ReportsPage() {
                 }
                 closeCommentModal()
               }}
-              disabled={!commentTarget?.id || savingId === commentTarget?.id}
+              disabled={readOnly || !commentTarget?.id || savingId === commentTarget?.id}
             >
               Enregistrer
             </Button>
@@ -703,6 +717,7 @@ export default function ReportsPage() {
           name="commentDraft"
           value={commentDraft}
           onChange={(e) => setCommentDraft(e.target.value)}
+          disabled={readOnly}
           multiline
           rows={7}
           placeholder="Votre message…"
