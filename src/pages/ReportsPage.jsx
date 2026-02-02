@@ -40,7 +40,7 @@ export default function ReportsPage() {
   const statusLabels = useMemo(
     () => ({
       Nouveau: 'Nouveau',
-      En_cours_de_traitement: 'En cours',
+      En_cours_de_traitement: 'En cours de traitement',
       R_solu: 'Résolu'
     }),
     []
@@ -377,7 +377,7 @@ export default function ReportsPage() {
           >
             <option value="">Tous</option>
             <option value="Nouveau">Nouveau</option>
-            <option value="En_cours_de_traitement">En cours</option>
+            <option value="En_cours_de_traitement">En cours de traitement</option>
             <option value="R_solu">Résolu</option>
           </select>
         </label>

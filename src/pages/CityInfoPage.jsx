@@ -60,6 +60,7 @@ export default function CityInfoPage() {
   const [saving, setSaving] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
   const [logoSaving, setLogoSaving] = useState(false)
+  const [postalCode, setPostalCode] = useState('')
   const [settings, setSettings] = useState(defaultSettings)
   const [jsonText, setJsonText] = useState('')
 
@@ -106,12 +107,14 @@ export default function CityInfoPage() {
         if (!mounted) return
         setSettings(data && typeof data === 'object' ? data : defaultSettings())
         setLogoUrl(city?.logo_url || '')
+        setPostalCode(city?.postal_code || '')
         if (city && typeof city === 'object') updateCity?.(city)
       } catch (err) {
         console.error(err)
         if (mounted) {
           setSettings(defaultSettings())
           setLogoUrl('')
+          setPostalCode('')
         }
       } finally {
         if (mounted) setLoading(false)
@@ -185,6 +188,9 @@ export default function CityInfoPage() {
       }
 
       await citySettingsAPI.save(payload)
+      const nextPostalCode = String(postalCode || '').trim() || null
+      await cityProfileAPI.updatePostalCode(nextPostalCode)
+      updateCity?.({ postal_code: nextPostalCode })
       toast.success('Informations de la ville enregistrées')
     } catch (err) {
       toast.error(err?.response?.data?.error || 'Erreur lors de l’enregistrement')
@@ -287,6 +293,12 @@ export default function CityInfoPage() {
 
           <div className="form-section">
             <div className="form-section-title">Adresse</div>
+            <Input
+              label="Code postal"
+              placeholder="75001"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+            />
             <Input
               label="Adresse"
               placeholder="1 place de la mairie"

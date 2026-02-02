@@ -94,6 +94,15 @@ export default function NewsPage() {
     return isNaN(date.getTime()) ? '—' : date.toLocaleDateString('fr-FR')
   }
 
+  const getReactionCounts = (reaction) => {
+    if (!reaction || typeof reaction !== 'object') return { heart: 0, like: 0, clap: 0 }
+    return {
+      heart: Number(reaction.heart || 0),
+      like: Number(reaction.like || 0),
+      clap: Number(reaction.clap || 0)
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -144,6 +153,12 @@ export default function NewsPage() {
             <span>
               <Calendar size={14} aria-hidden="true" />
               {formatDate(item.createdAt || item.created_at)}
+            </span>
+            <span>
+              {(() => {
+                const counts = getReactionCounts(item.reaction)
+                return `❤️ ${counts.heart}  👍 ${counts.like}  👏 ${counts.clap}`
+              })()}
             </span>
           </>
         )}

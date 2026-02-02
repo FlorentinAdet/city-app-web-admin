@@ -155,7 +155,8 @@ export const citySettingsAPI = {
 
 export const cityProfileAPI = {
   getMe: (params) => api.get('/city/me', { params }),
-  updateLogo: (logo_url, params) => api.put('/city/logo', { logo_url }, { params })
+  updateLogo: (logo_url, params) => api.put('/city/logo', { logo_url }, { params }),
+  updatePostalCode: (postal_code, params) => api.put('/city/postal-code', { postal_code }, { params })
 }
 
 // Polls API

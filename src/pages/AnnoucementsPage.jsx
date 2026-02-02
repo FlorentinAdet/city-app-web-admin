@@ -9,6 +9,7 @@ import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
 import { annoucementsAPI, uploadsAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useConfirmDialog } from '../context/ConfirmDialogContext'
 import { canEditPage } from '../utils/adminAccess'
 import './PageStyles.css'
 import { Megaphone, Plus, Save, Trash2 } from 'lucide-react'
@@ -27,6 +28,7 @@ const formatDate = (d) => {
 
 export default function AnnoucementsPage() {
   const { admin } = useAuth()
+  const { confirm } = useConfirmDialog()
   const canEdit = canEditPage('annoucements', admin)
 
   const [query, setQuery] = useState('')
@@ -41,7 +43,8 @@ export default function AnnoucementsPage() {
       image_url: '',
       status: 'Brouillon',
       start_at: '',
-      end_at: ''
+      end_at: '',
+      original_status: ''
     }),
     []
   )
@@ -55,6 +58,7 @@ export default function AnnoucementsPage() {
   const {
     items: annoucements,
     loading,
+    refresh,
     isDrawerOpen,
     editingItem,
     formData,
@@ -87,8 +91,27 @@ export default function AnnoucementsPage() {
       image_url: item?.image_url || '',
       status: item?.status || 'Brouillon',
       start_at: item?.start_at ? new Date(item.start_at).toISOString().slice(0, 16) : '',
-      end_at: item?.end_at ? new Date(item.end_at).toISOString().slice(0, 16) : ''
+      end_at: item?.end_at ? new Date(item.end_at).toISOString().slice(0, 16) : '',
+      original_status: item?.status || 'Brouillon'
     }),
+    prepareSubmit: async ({ formData }) => {
+      const isPublishing = formData?.status === 'Publi_' && formData?.original_status !== 'Publi_'
+      let shouldNotify = false
+
+      if (isPublishing) {
+        shouldNotify = await confirm({
+          title: 'Notifier les habitants ?',
+          message: 'Voulez-vous notifier les habitants ?',
+          confirmText: 'Notifier',
+          cancelText: 'Ne pas notifier',
+          confirmVariant: 'success',
+          cancelVariant: 'secondary'
+        })
+      }
+
+      const { original_status, ...payload } = formData || {}
+      return { data: { ...payload, notify: shouldNotify } }
+    },
     validate,
     messages: {
       loadError: 'Erreur lors du chargement des annonces',
@@ -113,6 +136,27 @@ export default function AnnoucementsPage() {
       getDate: (item) => item?.created_at || item?.createdAt
     })
   }, [annoucements, query, dateFrom, dateTo, sort])
+
+  const handleQuickPublish = async (item) => {
+    if (!item?.id || !canEdit) return
+    if (item?.status === 'Publi_') return
+
+    const shouldNotify = await confirm({
+      title: 'Notifier les habitants ?',
+      message: 'Voulez-vous notifier les habitants ?',
+      confirmText: 'Notifier',
+      cancelText: 'Ne pas notifier',
+      confirmVariant: 'success',
+      cancelVariant: 'secondary'
+    })
+
+    try {
+      await annoucementsAPI.update(item.id, { status: 'Publi_', notify: shouldNotify })
+      await refresh()
+    } catch (error) {
+      console.error('Erreur lors de la publication rapide:', error)
+    }
+  }
 
   return (
     <div className="page">
@@ -178,6 +222,11 @@ export default function AnnoucementsPage() {
             <Button type="button" variant="secondary" onClick={() => openEdit(item)}>
               Ouvrir
             </Button>
+            {canEdit && item?.status !== 'Publi_' ? (
+              <Button type="button" variant="success" onClick={() => handleQuickPublish(item)}>
+                Publier
+              </Button>
+            ) : null}
             {canEdit ? (
               <Button type="button" variant="danger" icon={<Trash2 size={16} />} onClick={() => handleDelete(item)}>
                 Supprimer

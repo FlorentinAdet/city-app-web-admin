@@ -10,7 +10,8 @@ export default function useQuickEditEntity({
   initialFormData,
   mapItemToFormData,
   validate,
-  messages
+  messages,
+  prepareSubmit
 }) {
   const toast = useToast()
   const { confirm } = useConfirmDialog()
@@ -135,10 +136,14 @@ export default function useQuickEditEntity({
     if (Object.keys(newErrors).length > 0) return
 
     try {
+      const prepared = prepareSubmit ? await prepareSubmit({ formData, editingItem }) : { data: formData }
+      if (prepared === null) return
+      const submitData = prepared?.data ?? formData
+
       if (editingItem) {
-        await handlersRef.current.updateItem(editingItem.id, formData)
+        await handlersRef.current.updateItem(editingItem.id, submitData)
       } else {
-        await handlersRef.current.createItem(formData)
+        await handlersRef.current.createItem(submitData)
       }
 
       await refresh()
