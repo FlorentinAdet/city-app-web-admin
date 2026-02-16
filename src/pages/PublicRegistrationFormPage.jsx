@@ -52,7 +52,7 @@ export default function PublicRegistrationFormPage() {
       try {
         const res = await api.get(`/public/registration-forms/${encodeURIComponent(citySlug)}/${encodeURIComponent(formSlug)}`)
         if (cancelled) return
-        const f = res?.data
+        const f = res?.data?.data || res?.data
         setForm(f)
 
         const def = ensureDefinition(f?.definition)
@@ -133,7 +133,8 @@ export default function PublicRegistrationFormPage() {
         body
       )
 
-      const remaining = res?.data?.remaining
+      const responseData = res?.data?.data || res?.data
+      const remaining = responseData?.remaining
       setSuccess(remaining === null || remaining === undefined ? 'Inscription envoyée avec succès.' : `Inscription envoyée. Places restantes: ${remaining}`)
     } catch (e2) {
       const status = e2?.response?.status

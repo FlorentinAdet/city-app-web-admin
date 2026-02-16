@@ -82,7 +82,9 @@ export default function useQuickEditEntity({
     try {
       const response = await handlersRef.current.fetchAll()
       if (!mountedRef.current) return
-      setItems(response?.data || [])
+      const payload = response?.data
+      const items = Array.isArray(payload?.data) ? payload.data : payload
+      setItems(items || [])
     } catch (error) {
       const msg = resolveMessage('loadError', error) || 'Erreur lors du chargement'
       console.error(msg, error)

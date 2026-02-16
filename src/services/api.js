@@ -1,15 +1,11 @@
 import axios from 'axios'
 
-// Some env files include accidental leading/trailing spaces (e.g. "VITE_API_URL= http://...")
-// Trim to avoid malformed base URLs.
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').trim()
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  // Let axios set Content-Type per request (JSON vs multipart)
 })
 
-// Attach Authorization header if token is stored
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('admin_token')
   if (token) {
@@ -19,8 +15,6 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Global auth failure handling: if token is missing/expired/invalid,
-// clear persisted auth and force the app back to the login screen.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -31,7 +25,6 @@ api.interceptors.response.use(
       localStorage.removeItem('admin_info')
       localStorage.removeItem('admin_city')
       if (typeof window !== 'undefined') {
-        // Keep it simple and robust: reload so AuthProvider rehydrates from storage.
         window.location.reload()
       }
     }
@@ -149,14 +142,14 @@ export const citiesAPI = {
 
 // City Settings API (admin scoped)
 export const citySettingsAPI = {
-  get: (params) => api.get('/city-settings', { params }),
-  save: (settings, params) => api.put('/city-settings', settings, { params })
+  getPublicInfo: (params) => api.get('/city-settings/public-info', { params }),
+  savePublicInfo: (settings, params) => api.put('/city-settings/public-info', settings, { params })
 }
 
 export const cityProfileAPI = {
   getMe: (params) => api.get('/city/me', { params }),
   updateLogo: (logo_url, params) => api.put('/city/logo', { logo_url }, { params }),
-  updatePostalCode: (postal_code, params) => api.put('/city/postal-code', { postal_code }, { params })
+  updatePostalCode: (postalCode, params) => api.put('/city/postal-code', { postalCode }, { params })
 }
 
 // Polls API
@@ -197,11 +190,11 @@ export const uploadsAPI = {
 
 // Annoucements API
 export const annoucementsAPI = {
-  getAll: () => api.get('/annoucements'),
-  getById: (id) => api.get(`/annoucements/${id}`),
-  create: (data) => api.post('/annoucements', data),
-  update: (id, data) => api.put(`/annoucements/${id}`, data),
-  delete: (id) => api.delete(`/annoucements/${id}`)
+  getAll: () => api.get('/announcements'),
+  getById: (id) => api.get(`/announcements/${id}`),
+  create: (data) => api.post('/announcements', data),
+  update: (id, data) => api.put(`/announcements/${id}`, data),
+  delete: (id) => api.delete(`/announcements/${id}`)
 }
 
 // Admin API (superadmin only)

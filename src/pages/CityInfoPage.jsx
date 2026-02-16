@@ -98,12 +98,12 @@ export default function CityInfoPage() {
       setLoading(true)
       try {
         const [settingsRes, cityRes] = await Promise.all([
-          citySettingsAPI.get(),
+          citySettingsAPI.getPublicInfo(),
           cityProfileAPI.getMe()
         ])
 
-        const data = settingsRes?.data
-        const city = cityRes?.data
+        const data = settingsRes?.data?.data || settingsRes?.data
+        const city = cityRes?.data?.data || cityRes?.data
         if (!mounted) return
         setSettings(data && typeof data === 'object' ? data : defaultSettings())
         setLogoUrl(city?.logo_url || '')
@@ -187,8 +187,8 @@ export default function CityInfoPage() {
         setSettings(parsed)
       }
 
-      await citySettingsAPI.save(payload)
       const nextPostalCode = String(postalCode || '').trim() || null
+      await citySettingsAPI.savePublicInfo(payload)
       await cityProfileAPI.updatePostalCode(nextPostalCode)
       updateCity?.({ postal_code: nextPostalCode })
       toast.success('Informations de la ville enregistrées')
@@ -285,7 +285,7 @@ export default function CityInfoPage() {
               disabled={saving || logoSaving || readOnly}
               uploadFn={async (file) => {
                 const res = await uploadsAPI.uploadLogo(file)
-                return res.data
+                return res.data?.data || res.data
               }}
               onChangeUrl={(url) => updateLogo(url)}
             />

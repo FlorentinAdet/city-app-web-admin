@@ -14,7 +14,7 @@ import './PageStyles.css'
 import { Calendar, Newspaper, Plus, Save, Trash2 } from 'lucide-react'
 
 export default function NewsPage() {
-  const { admin } = useAuth()
+  const { admin, city } = useAuth()
   const canEdit = canEditPage('news', admin)
 
   const [query, setQuery] = useState('')
@@ -53,7 +53,7 @@ export default function NewsPage() {
     handleDelete
   } = useQuickEditEntity({
     fetchAll: newsAPI.getAll,
-    createItem: newsAPI.create,
+    createItem: (data) => newsAPI.create({ ...data, cityId: city?.id }),
     updateItem: newsAPI.update,
     deleteItem: newsAPI.delete,
     initialFormData,
@@ -216,7 +216,7 @@ export default function NewsPage() {
             }}
             uploadFn={async (file) => {
               const res = await uploadsAPI.uploadImage(file, { kind: 'news' })
-              return res.data
+              return res.data?.data || res.data
             }}
             disabled={!canEdit}
           />

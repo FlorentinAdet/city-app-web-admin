@@ -13,7 +13,7 @@ import { useAuth } from '../context/AuthContext'
 import { canEditPage } from '../utils/adminAccess'
 
 export default function PollsPage() {
-  const { admin } = useAuth()
+  const { admin, city } = useAuth()
   const canEdit = canEditPage('polls', admin)
 
   const [query, setQuery] = useState('')
@@ -93,7 +93,7 @@ export default function PollsPage() {
     handleDelete
   } = useQuickEditEntity({
     fetchAll: pollsAPI.getAll,
-    createItem: pollsAPI.create,
+    createItem: (data) => pollsAPI.create({ ...data, cityId: city?.id }),
     updateItem: pollsAPI.update,
     deleteItem: pollsAPI.delete,
     initialFormData,

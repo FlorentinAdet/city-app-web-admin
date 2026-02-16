@@ -27,7 +27,7 @@ const formatDate = (d) => {
 }
 
 export default function AnnoucementsPage() {
-  const { admin } = useAuth()
+  const { admin, city } = useAuth()
   const { confirm } = useConfirmDialog()
   const canEdit = canEditPage('annoucements', admin)
 
@@ -40,7 +40,7 @@ export default function AnnoucementsPage() {
     () => ({
       title: '',
       content: '',
-      image_url: '',
+      image: '',
       status: 'Brouillon',
       start_at: '',
       end_at: '',
@@ -72,7 +72,7 @@ export default function AnnoucementsPage() {
   } = useQuickEditEntity({
     fetchAll: annoucementsAPI.getAll,
     createItem: (data) => {
-      const payload = { ...data }
+      const payload = { ...data, cityId: city?.id }
       payload.start_at = payload.start_at ? new Date(payload.start_at).toISOString() : null
       payload.end_at = payload.end_at ? new Date(payload.end_at).toISOString() : null
       return annoucementsAPI.create(payload)
@@ -88,7 +88,7 @@ export default function AnnoucementsPage() {
     mapItemToFormData: (item) => ({
       title: item?.title || '',
       content: item?.content || '',
-      image_url: item?.image_url || '',
+      image: item?.image_url || '',
       status: item?.status || 'Brouillon',
       start_at: item?.start_at ? new Date(item.start_at).toISOString().slice(0, 16) : '',
       end_at: item?.end_at ? new Date(item.end_at).toISOString().slice(0, 16) : '',
@@ -275,11 +275,11 @@ export default function AnnoucementsPage() {
 
           <ImageUploadField
             label="Image"
-            value={formData.image_url}
-            onChangeUrl={(url) => handleInputChange({ target: { name: 'image_url', value: url } })}
+            value={formData.image}
+            onChangeUrl={(url) => handleInputChange({ target: { name: 'image', value: url } })}
             uploadFn={async (file) => {
               const res = await uploadsAPI.uploadImage(file, { kind: 'annoucements' })
-              return res.data
+              return res.data?.data || res.data
             }}
             disabled={!canEdit}
           />

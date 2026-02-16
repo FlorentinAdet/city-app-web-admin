@@ -17,7 +17,7 @@ import { AlertTriangle, Calendar, Check, ChevronDown, MessageSquare, Trash2, Use
 
 export default function ReportsPage() {
   const toast = useToast()
-  const { admin } = useAuth()
+  const { admin, city } = useAuth()
   const canEdit = canEditPage('reports', admin)
   const readOnly = !canEdit
 
@@ -114,7 +114,7 @@ export default function ReportsPage() {
     setFormData
   } = useQuickEditEntity({
     fetchAll: reportsAPI.getAll,
-    createItem: reportsAPI.create,
+    createItem: (data) => reportsAPI.create({ ...data, cityId: city?.id }),
     updateItem: (id, form) => reportsAPI.update(id, form),
     deleteItem: reportsAPI.delete,
     initialFormData,

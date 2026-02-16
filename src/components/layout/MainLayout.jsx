@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useEffect, useState } from 'react'
 import { cityProfileAPI } from '../../services/api'
 
-export default function MainLayout({ children, title, activePage, onPageChange }) {
+export default function MainLayout({ children, title }) {
   const { admin, city, token, updateCity } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -43,8 +43,6 @@ export default function MainLayout({ children, title, activePage, onPageChange }
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        activePage={activePage}
-        onPageChange={onPageChange}
         cityName={displayCityName}
         logoUrl={displayLogoUrl}
         role={admin?.role}

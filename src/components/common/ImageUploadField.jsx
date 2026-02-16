@@ -28,7 +28,7 @@ export default function ImageUploadField({
     try {
       setUploading(true)
       const result = await uploadFn(file)
-      onChangeUrl?.(result?.url || '')
+      onChangeUrl?.(result?.secureUrl || result?.url || '')
       toast.success('Image uploadée avec succès')
     } catch (err) {
       const status = err?.response?.status

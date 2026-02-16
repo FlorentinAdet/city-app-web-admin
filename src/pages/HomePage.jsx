@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI } from '../services/api'
 import { canViewPage } from '../utils/adminAccess'
 import './HomePage.css'
 import { Calendar, FileText, Home, Info, Newspaper, Shield, Users } from 'lucide-react'
+import { findAdminRouteById } from '../routes/adminRouteMeta'
 
-export default function HomePage({ onNavigate }) {
+export default function HomePage() {
   const { admin, city } = useAuth()
+  const navigate = useNavigate()
   const [userCount, setUserCount] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -21,7 +24,8 @@ export default function HomePage({ onNavigate }) {
       setLoading(true)
       try {
         const res = await usersAPI.getAll()
-        const count = Array.isArray(res.data) ? res.data.length : 0
+        const users = res.data?.data || res.data || []
+        const count = Array.isArray(users) ? users.length : 0
         if (isMounted) setUserCount(count)
       } catch {
         if (isMounted) setUserCount(null)
@@ -50,6 +54,13 @@ export default function HomePage({ onNavigate }) {
   const visibleQuickLinks = useMemo(() => {
     return quickLinks.filter((link) => canViewPage(link.id, admin))
   }, [admin, quickLinks])
+
+  const goToPage = (pageId) => {
+    const meta = findAdminRouteById(pageId)
+    if (meta?.path) {
+      navigate(meta.path)
+    }
+  }
 
   return (
     <div className="home">
@@ -93,7 +104,7 @@ export default function HomePage({ onNavigate }) {
                   key={link.id}
                   type="button"
                   className="quick-card"
-                  onClick={() => onNavigate?.(link.id)}
+                  onClick={() => goToPage(link.id)}
                 >
                   <span className="quick-icon" aria-hidden="true"><Icon size={18} /></span>
                   <span className="quick-label">{link.label}</span>
@@ -105,7 +116,7 @@ export default function HomePage({ onNavigate }) {
               <button
                 type="button"
                 className="quick-card"
-                onClick={() => onNavigate?.('admin-panel')}
+                onClick={() => goToPage('admin-panel')}
               >
                 <span className="quick-icon" aria-hidden="true"><Shield size={18} /></span>
                 <span className="quick-label">Superadmin</span>

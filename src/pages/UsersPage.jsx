@@ -84,7 +84,8 @@ export default function UsersPage() {
     setLoading(true)
     try {
       const res = await usersAdminAPI.getAll()
-      setItems(Array.isArray(res?.data) ? res.data : [])
+      const data = res?.data?.data || res?.data || []
+      setItems(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Erreur lors du chargement des comptes admin:', err)
       toast.error(err?.response?.data?.error || 'Erreur lors du chargement des utilisateurs')

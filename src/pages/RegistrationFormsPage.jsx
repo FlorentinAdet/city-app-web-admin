@@ -208,6 +208,7 @@ export default function RegistrationFormsPage() {
       }
 
       payload.public_slug = String(payload.public_slug || '').trim() || slugify(payload.titre)
+      payload.cityId = city?.id
       return registrationFormsAPI.create(payload)
     },
     updateItem: (id, data) => {
@@ -262,12 +263,13 @@ export default function RegistrationFormsPage() {
       const payload = {
         titre: data?.titre,
         description: data?.description,
-        definition: ensureDefinition(data?.definition)
+        definition: ensureDefinition(data?.definition),
+        cityId: city?.id
       }
 
       if (admin?.role === 'superadmin') {
         payload.scope = data?.scope === 'global' ? 'global' : 'city'
-        if (payload.scope === 'city' && city?.id) payload.city_id = city.id
+        if (payload.scope === 'global') delete payload.cityId
       }
 
       return registrationFormTemplatesAPI.create(payload)

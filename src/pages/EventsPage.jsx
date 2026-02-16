@@ -14,7 +14,7 @@ import './PageStyles.css'
 import { Calendar, MapPin, Plus, Save, Trash2 } from 'lucide-react'
 
 export default function EventsPage() {
-  const { admin } = useAuth()
+  const { admin, city } = useAuth()
   const canEdit = canEditPage('events', admin)
 
   const [query, setQuery] = useState('')
@@ -57,7 +57,7 @@ export default function EventsPage() {
     handleDelete
   } = useQuickEditEntity({
     fetchAll: eventsAPI.getAll,
-    createItem: eventsAPI.create,
+    createItem: (data) => eventsAPI.create({ ...data, cityId: city?.id }),
     updateItem: eventsAPI.update,
     deleteItem: eventsAPI.delete,
     initialFormData,
@@ -242,8 +242,8 @@ export default function EventsPage() {
               handleInputChange({ target: { name: 'image', value: url } })
             }}
             uploadFn={async (file) => {
-              const res = await uploadsAPI.uploadImage(file, { kind: 'event' })
-              return res.data
+              const res = await uploadsAPI.uploadImage(file, { kind: 'events' })
+              return res.data?.data || res.data
             }}
             disabled={!canEdit}
           />

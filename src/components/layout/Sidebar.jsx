@@ -2,8 +2,10 @@ import './Sidebar.css'
 import { useAuth } from '../../context/AuthContext'
 import { AlertTriangle, BarChart3, Calendar, ClipboardList, Home, Info, LogOut, Megaphone, Newspaper, Shield, Users, X } from 'lucide-react'
 import { canViewPage } from '../../utils/adminAccess'
+import { NavLink } from 'react-router-dom'
+import { findAdminRouteById } from '../../routes/adminRouteMeta'
 
-export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cityName, logoUrl, role }) {
+export default function Sidebar({ isOpen, onClose, cityName, logoUrl, role }) {
   const { logout, admin } = useAuth()
 
   const resolvedRole = role || admin?.role
@@ -28,10 +30,8 @@ export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cit
     window.location.href = '/login'
   }
 
-  const handleNavigation = (item) => {
+  const handleNavigation = () => {
     onClose()
-    // Emit navigation to parent
-    if (onPageChange) onPageChange(item.id)
   }
 
   return (
@@ -59,18 +59,21 @@ export default function Sidebar({ isOpen, onClose, activePage, onPageChange, cit
 
         <nav className="sidebar-nav">
           {navItems.map((item) => {
+            const meta = findAdminRouteById(item.id)
+            if (!meta) return null
             const Icon = item.icon
             return (
-              <button
+              <NavLink
                 key={item.id}
-                className={`nav-item ${activePage === item.id ? 'active' : ''}`}
-                onClick={() => handleNavigation(item)}
+                to={meta.path}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                onClick={handleNavigation}
               >
                 <span className="nav-icon" aria-hidden="true">
                   <Icon size={18} />
                 </span>
                 <span className="nav-label">{item.label}</span>
-              </button>
+              </NavLink>
             )
           })}
         </nav>
