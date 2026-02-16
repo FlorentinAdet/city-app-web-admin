@@ -20,7 +20,7 @@ import {
 
 const PERMISSIONS = [
   { key: 'city_info', label: 'Informations de la ville' },
-  { key: 'annoucements', label: 'Annonces' },
+  { key: 'announcements', label: 'Annonces' },
   { key: 'news', label: 'Actualités' },
   { key: 'events', label: 'Événements' },
   { key: 'polls', label: 'Sondages' },

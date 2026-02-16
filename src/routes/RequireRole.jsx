@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getFirstAccessibleAdminPath } from './adminRouteAccess'
 
-export default function RequireRole({ children, allowedRoles, fallbackPath = '/admin/home' }) {
+export default function RequireRole({ children, allowedRoles, fallbackPath }) {
   const { admin } = useAuth()
 
   if (!admin) {
@@ -15,7 +16,8 @@ export default function RequireRole({ children, allowedRoles, fallbackPath = '/a
   const role = String(admin.role || '').toLowerCase()
   const ok = allowedRoles.map((item) => String(item).toLowerCase()).includes(role)
   if (!ok) {
-    return <Navigate to={fallbackPath} replace />
+    const target = fallbackPath || getFirstAccessibleAdminPath(admin, '/login')
+    return <Navigate to={target} replace />
   }
 
   return children

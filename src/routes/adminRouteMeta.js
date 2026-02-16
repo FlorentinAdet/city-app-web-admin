@@ -1,7 +1,7 @@
 const ADMIN_ROUTE_META = [
   { id: 'home', path: '/admin/home', title: 'Tableau de bord' },
   { id: 'city-info', path: '/admin/city-info', title: 'City info' },
-  { id: 'annoucements', path: '/admin/annoucements', title: 'Annoucements' },
+  { id: 'announcements', path: '/admin/announcements', title: 'Annonces' },
   { id: 'news', path: '/admin/news', title: 'News' },
   { id: 'events', path: '/admin/events', title: 'Events' },
   { id: 'polls', path: '/admin/polls', title: 'Polls' },

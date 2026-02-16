@@ -1,8 +1,9 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { canViewPage } from '../utils/adminAccess'
+import { getFirstAccessibleAdminPath } from './adminRouteAccess'
 
-export default function RequirePermission({ children, pageId, fallbackPath = '/admin/home' }) {
+export default function RequirePermission({ children, pageId, fallbackPath }) {
   const { admin } = useAuth()
 
   if (!admin) {
@@ -14,7 +15,8 @@ export default function RequirePermission({ children, pageId, fallbackPath = '/a
   }
 
   if (!canViewPage(pageId, admin)) {
-    return <Navigate to={fallbackPath} replace />
+    const target = fallbackPath || getFirstAccessibleAdminPath(admin, '/login')
+    return <Navigate to={target} replace />
   }
 
   return children

@@ -1,5 +1,5 @@
 import AdminPanelPage from '../pages/AdminPanelPage'
-import AnnoucementsPage from '../pages/AnnoucementsPage'
+import AnnouncementsPage from '../pages/AnnouncementsPage'
 import CityInfoPage from '../pages/CityInfoPage'
 import EventsPage from '../pages/EventsPage'
 import HomePage from '../pages/HomePage'
@@ -12,7 +12,7 @@ import UsersPage from '../pages/UsersPage'
 const adminRoutes = [
   { id: 'home', path: 'home', element: <HomePage /> },
   { id: 'city-info', path: 'city-info', element: <CityInfoPage /> },
-  { id: 'annoucements', path: 'annoucements', element: <AnnoucementsPage /> },
+  { id: 'announcements', path: 'announcements', element: <AnnouncementsPage /> },
   { id: 'news', path: 'news', element: <NewsPage /> },
   { id: 'events', path: 'events', element: <EventsPage /> },
   { id: 'polls', path: 'polls', element: <PollsPage /> },

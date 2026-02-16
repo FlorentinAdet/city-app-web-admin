@@ -7,7 +7,7 @@ import ImageUploadField from '../components/common/ImageUploadField'
 import Button from '../components/common/Button'
 import useQuickEditEntity from '../hooks/useQuickEditEntity'
 import { filterAndSort } from '../utils/listFiltering'
-import { annoucementsAPI, uploadsAPI } from '../services/api'
+import { announcementsAPI, uploadsAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useConfirmDialog } from '../context/ConfirmDialogContext'
 import { canEditPage } from '../utils/adminAccess'
@@ -26,10 +26,10 @@ const formatDate = (d) => {
   return isNaN(date.getTime()) ? '—' : date.toLocaleDateString('fr-FR')
 }
 
-export default function AnnoucementsPage() {
+export default function AnnouncementsPage() {
   const { admin, city } = useAuth()
   const { confirm } = useConfirmDialog()
-  const canEdit = canEditPage('annoucements', admin)
+  const canEdit = canEditPage('announcements', admin)
 
   const [query, setQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
@@ -56,7 +56,7 @@ export default function AnnoucementsPage() {
   }
 
   const {
-    items: annoucements,
+    items: announcements,
     loading,
     refresh,
     isDrawerOpen,
@@ -70,20 +70,20 @@ export default function AnnoucementsPage() {
     handleSubmit,
     handleDelete
   } = useQuickEditEntity({
-    fetchAll: annoucementsAPI.getAll,
+    fetchAll: announcementsAPI.getAll,
     createItem: (data) => {
       const payload = { ...data, cityId: city?.id }
       payload.start_at = payload.start_at ? new Date(payload.start_at).toISOString() : null
       payload.end_at = payload.end_at ? new Date(payload.end_at).toISOString() : null
-      return annoucementsAPI.create(payload)
+      return announcementsAPI.create(payload)
     },
     updateItem: (id, data) => {
       const payload = { ...data }
       payload.start_at = payload.start_at ? new Date(payload.start_at).toISOString() : null
       payload.end_at = payload.end_at ? new Date(payload.end_at).toISOString() : null
-      return annoucementsAPI.update(id, payload)
+      return announcementsAPI.update(id, payload)
     },
-    deleteItem: annoucementsAPI.delete,
+    deleteItem: announcementsAPI.delete,
     initialFormData,
     mapItemToFormData: (item) => ({
       title: item?.title || '',
@@ -126,7 +126,7 @@ export default function AnnoucementsPage() {
 
   const visible = useMemo(() => {
     return filterAndSort({
-      items: annoucements,
+      items: announcements,
       query,
       dateFrom,
       dateTo,
@@ -135,7 +135,7 @@ export default function AnnoucementsPage() {
       getTitle: (item) => item?.title ?? '',
       getDate: (item) => item?.created_at || item?.createdAt
     })
-  }, [annoucements, query, dateFrom, dateTo, sort])
+  }, [announcements, query, dateFrom, dateTo, sort])
 
   const handleQuickPublish = async (item) => {
     if (!item?.id || !canEdit) return
@@ -151,7 +151,7 @@ export default function AnnoucementsPage() {
     })
 
     try {
-      await annoucementsAPI.update(item.id, { status: 'Publi_', notify: shouldNotify })
+      await announcementsAPI.update(item.id, { status: 'Publi_', notify: shouldNotify })
       await refresh()
     } catch (error) {
       console.error('Erreur lors de la publication rapide:', error)
@@ -258,8 +258,6 @@ export default function AnnoucementsPage() {
             onChange={handleInputChange}
             required
             error={errors.title}
-            placeholder="Ex: Travaux rue principale"
-            disabled={!canEdit}
           />
 
           <Input
@@ -268,63 +266,67 @@ export default function AnnoucementsPage() {
             value={formData.content}
             onChange={handleInputChange}
             multiline
-            rows={8}
-            placeholder="Détails de l'annonce..."
-            disabled={!canEdit}
+            rows={4}
           />
 
           <ImageUploadField
             label="Image"
             value={formData.image}
-            onChangeUrl={(url) => handleInputChange({ target: { name: 'image', value: url } })}
-            uploadFn={async (file) => {
-              const res = await uploadsAPI.uploadImage(file, { kind: 'annoucements' })
-              return res.data?.data || res.data
+            onChange={async (value) => {
+              if (typeof value === 'string') {
+                handleInputChange({ target: { name: 'image', value } })
+                return
+              }
+
+              const file = value
+              if (!file) return
+              try {
+                const res = await uploadsAPI.uploadImage(file, { kind: 'announcements' })
+                const url = res?.data?.data?.url || res?.data?.url
+                if (url) handleInputChange({ target: { name: 'image', value: url } })
+              } catch (err) {
+                console.error('Erreur upload image:', err)
+              }
             }}
-            disabled={!canEdit}
           />
 
           <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Statut</label>
-              <select className="form-input" name="status" value={formData.status} onChange={handleInputChange} disabled={!canEdit}>
-                <option value="Brouillon">Brouillon</option>
-                <option value="Publi_">Publié</option>
-                <option value="Ferm_">Fermé</option>
-              </select>
-            </div>
             <Input
-              label="Début (optionnel)"
-              name="start_at"
               type="datetime-local"
+              label="Début"
+              name="start_at"
               value={formData.start_at}
               onChange={handleInputChange}
-              disabled={!canEdit}
             />
             <Input
-              label="Fin (optionnel)"
-              name="end_at"
               type="datetime-local"
+              label="Fin"
+              name="end_at"
               value={formData.end_at}
               onChange={handleInputChange}
-              disabled={!canEdit}
             />
           </div>
 
-          <div className="form-actions">
-            {canEdit && editingItem && (
-              <Button type="button" variant="danger" onClick={() => handleDelete(editingItem)} icon={<Trash2 size={16} />}>
-                Supprimer
-              </Button>
-            )}
+          <Input
+            label="Statut"
+            name="status"
+            value={formData.status}
+            onChange={handleInputChange}
+            select
+            options={[
+              { value: 'Brouillon', label: 'Brouillon' },
+              { value: 'Publi_', label: 'Publié' },
+              { value: 'Ferm_', label: 'Fermé' }
+            ]}
+          />
+
+          <div className="drawer-actions">
             <Button type="button" variant="secondary" onClick={closeDrawer}>
-              Fermer
+              Annuler
             </Button>
-            {canEdit ? (
-              <Button type="submit" variant="success" icon={<Save size={16} />}>
-                {editingItem ? 'Enregistrer' : 'Créer'}
-              </Button>
-            ) : null}
+            <Button type="submit" variant="primary" icon={<Save size={16} />}>
+              {editingItem ? 'Enregistrer' : 'Créer'}
+            </Button>
           </div>
         </form>
       </Drawer>

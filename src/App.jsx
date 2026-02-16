@@ -7,7 +7,7 @@ import { useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import { ConfirmDialogProvider } from './context/ConfirmDialogContext'
 import { AdminLayout, RequireAuth, RequirePermission, RequireRole, adminRoutes } from './routes'
-import { findAdminRouteById } from './routes/adminRouteMeta'
+import { getFirstAccessibleAdminPath } from './routes/adminRouteAccess'
 
 function AppProviders({ children }) {
   return (
@@ -19,9 +19,8 @@ function AppProviders({ children }) {
 
 function AdminIndexRedirect() {
   const { admin } = useAuth()
-  const targetId = admin?.role === 'superadmin' ? 'admin-panel' : 'home'
-  const meta = findAdminRouteById(targetId)
-  return <Navigate to={meta?.path || '/admin/home'} replace />
+  const fallback = getFirstAccessibleAdminPath(admin, '/login')
+  return <Navigate to={fallback} replace />
 }
 
 function App() {

@@ -14,7 +14,7 @@ export default function Sidebar({ isOpen, onClose, cityName, logoUrl, role }) {
     : [
         { id: 'home', icon: Home, label: 'Accueil' },
         { id: 'city-info', icon: Info, label: 'Informations ville' },
-        { id: 'annoucements', icon: Megaphone, label: 'Annonces' },
+        { id: 'announcements', icon: Megaphone, label: 'Annonces' },
         { id: 'news', icon: Newspaper, label: 'Actualités' },
         { id: 'events', icon: Calendar, label: 'Événements' },
         { id: 'polls', icon: BarChart3, label: 'Sondages' },

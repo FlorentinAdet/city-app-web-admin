@@ -188,8 +188,8 @@ export const uploadsAPI = {
   }
 }
 
-// Annoucements API
-export const annoucementsAPI = {
+// Announcements API
+export const announcementsAPI = {
   getAll: () => api.get('/announcements'),
   getById: (id) => api.get(`/announcements/${id}`),
   create: (data) => api.post('/announcements', data),

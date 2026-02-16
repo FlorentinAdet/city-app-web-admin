@@ -1,6 +1,6 @@
 const PAGE_TO_ACCESS_KEY = {
   'city-info': 'city_info',
-  annoucements: 'annoucements',
+  announcements: 'announcements',
   news: 'news',
   events: 'events',
   polls: 'polls',
